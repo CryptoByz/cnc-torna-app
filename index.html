@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CNC Torna G-Code Üretici</title>
+  <meta name="description" content="Teknik resim veya PDF yükleyerek CNC torna G-code otomatik üretin. Fanuc ve Siemens 840D uyumlu.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0e1a; --bg2: #0f1629; --bg3: #131c35; --bg4: #0d1526;
+      --border: #1e2d4f; --border2: #2d4a7a;
+      --blue: #3b82f6; --indigo: #6366f1; --green: #10b981; --cyan: #06b6d4;
+      --amber: #f59e0b; --red: #ef4444; --purple: #8b5cf6;
+      --t1: #f1f5f9; --t2: #94a3b8; --t3: #475569;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{min-height:100%;background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(59,130,246,.03)1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,.03)1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+
+    .wrap{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:0 16px 48px}
+    .grid{display:grid;grid-template-columns:360px 1fr 390px;gap:16px;align-items:start}
+    @media(max-width:1100px){.grid{grid-template-columns:1fr 1fr}}
+    @media(max-width:700px){.grid{grid-template-columns:1fr}}
+
+    /* header */
+    header{padding:18px 0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);margin-bottom:20px;flex-wrap:wrap;gap:10px}
+    .logo{display:flex;align-items:center;gap:12px}
+    .logo-icon{width:44px;height:44px;background:linear-gradient(135deg,var(--blue),var(--indigo));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 20px rgba(99,102,241,.35);flex-shrink:0}
+    .logo h1{font-size:18px;font-weight:700;background:linear-gradient(135deg,#fff 40%,#94a3b8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .logo p{font-size:11px;color:var(--t3);margin-top:1px}
+    .badges{display:flex;gap:6px;flex-wrap:wrap}
+    .badge{padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600}
+    .b-blue{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.28);color:#93c5fd}
+    .b-green{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.28);color:#6ee7b7}
+
+    /* panel */
+    .panel{background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .2s}
+    .panel:hover{border-color:var(--border2)}
+    .ph{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.02)}
+    .ph-icon{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+    .ic-blue{background:rgba(59,130,246,.15)} .ic-green{background:rgba(16,185,129,.15)}
+    .ic-purple{background:rgba(139,92,246,.15)} .ic-orange{background:rgba(245,158,11,.15)}
+    .pt{font-size:13px;font-weight:600} .ps{font-size:10px;color:var(--t3);margin-top:1px}
+    .pb{padding:16px}
+
+    /* forms */
+    .fg{margin-bottom:12px}
+    label{display:block;font-size:10px;font-weight:600;color:var(--t2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+    input[type=number],input[type=text],select{width:100%;padding:8px 10px;background:var(--bg4);border:1px solid var(--border);border-radius:7px;color:var(--t1);font-size:12px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+    input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+    .fr{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+
+    /* upload */
+    .upload{border:2px dashed var(--border);border-radius:12px;padding:22px 16px;text-align:center;cursor:pointer;transition:all .3s;background:var(--bg4);position:relative;overflow:hidden}
+    .upload:hover,.upload.drag{border-color:var(--blue);background:rgba(59,130,246,.07)}
+    .upload input{display:none}
+    .upload-icon{font-size:30px;margin-bottom:7px}
+    .upload-title{font-size:13px;font-weight:600;margin-bottom:3px}
+    .upload-sub{font-size:11px;color:var(--t3)}
+    #upload-preview{max-width:100%;max-height:180px;object-fit:contain;border-radius:8px;margin:0 auto;display:none}
+    .pdf-info{margin-top:8px;font-size:11px;color:var(--green);background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);padding:5px 10px;border-radius:5px;display:none}
+    .progress{width:100%;height:3px;background:var(--border);border-radius:2px;margin-top:8px;display:none;overflow:hidden}
+    .progress-bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--indigo));border-radius:2px;width:0;transition:width .3s}
+
+    /* ops */
+    .op-item{display:flex;align-items:center;gap:9px;padding:10px 12px;background:var(--bg4);border:1px solid var(--border);border-radius:9px;cursor:pointer;transition:all .2s;margin-bottom:6px}
+    .op-item:hover,.op-item.sel{border-color:var(--blue);background:rgba(59,130,246,.07)}
+    .op-item input[type=checkbox]{width:14px;height:14px;accent-color:var(--blue);cursor:pointer;flex-shrink:0}
+    .op-name{font-size:12px;font-weight:600} .op-desc{font-size:10px;color:var(--t3);margin-top:1px}
+    .op-badge{padding:2px 7px;border-radius:4px;font-size:9px;font-weight:600;background:rgba(59,130,246,.12);color:#93c5fd;flex-shrink:0}
+
+    /* canvas */
+    .canvas-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+    .ctb{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.02);flex-wrap:wrap}
+    .ctb-title{font-size:12px;font-weight:600;flex:1;min-width:80px}
+    .coord-disp{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--cyan);padding:5px 9px;background:var(--bg4);border:1px solid var(--border);border-radius:6px;min-width:150px;text-align:center}
+    canvas{display:block;width:100%;cursor:crosshair;background:#060c1a}
+    .cinfo{padding:7px 14px;border-top:1px solid var(--border);display:flex;gap:14px;font-size:10px;color:var(--t3);flex-wrap:wrap}
+    .dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle}
+
+    /* table */
+    .tbl-wrap{border:1px solid var(--border);border-radius:9px;overflow:auto;margin-bottom:10px;max-height:280px}
+    table{width:100%;border-collapse:collapse;font-size:11px}
+    thead th{padding:7px 7px;background:var(--bg4);color:var(--t3);font-weight:600;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.4px;position:sticky;top:0;z-index:1}
+    tbody tr{border-top:1px solid var(--border)}
+    tbody tr:hover{background:rgba(255,255,255,.02)}
+    tbody td{padding:4px 5px}
+    tbody td input{padding:4px 6px;font-size:11px;border-radius:5px}
+    tbody td select{padding:4px 4px;font-size:10px;border-radius:5px}
+    .del-btn{background:none;border:none;color:var(--t3);cursor:pointer;padding:3px 5px;border-radius:4px;font-size:13px;transition:all .2s;line-height:1}
+    .del-btn:hover{color:var(--red);background:rgba(239,68,68,.1)}
+
+    /* gcode */
+    .gc-out{font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.7;padding:12px;background:#060c1a;border:1px solid var(--border);border-radius:9px;height:430px;overflow-y:auto;color:var(--t2);white-space:pre;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+    .gc-out::-webkit-scrollbar{width:4px}
+    .gc-out::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+    .gc-comment{color:#374151}.gc-tool{color:var(--amber);font-weight:600}
+    .gc-rapid{color:var(--cyan)}.gc-feed{color:var(--blue)}
+    .gc-spindle{color:var(--purple)}.gc-cycle{color:var(--green)}
+    .gc-coord{color:#e2e8f0}.gc-param{color:#fbbf24}
+    .gc-hdr{color:#4b5563}
+
+    /* stats */
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+    .stat{padding:10px;background:var(--bg4);border:1px solid var(--border);border-radius:9px;text-align:center}
+    .sv{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--cyan)}
+    .sl{font-size:9px;color:var(--t3);margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+
+    /* buttons */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:'Inter',sans-serif;text-decoration:none}
+    .btn:hover{transform:translateY(-1px)}
+    .btn-outline{background:transparent;border:1px solid var(--border);color:var(--t2)}
+    .btn-outline:hover{border-color:var(--blue);color:var(--blue);background:rgba(59,130,246,.07)}
+    .btn-success{background:linear-gradient(135deg,#059669,var(--green));color:#fff;box-shadow:0 3px 12px rgba(16,185,129,.25)}
+    .btn-sm{padding:5px 10px;font-size:11px}
+    .btn-gen{width:100%;padding:14px;background:linear-gradient(135deg,#059669,var(--green),#34d399);color:#fff;font-size:14px;font-weight:700;border:none;border-radius:12px;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 0 20px rgba(16,185,129,.25);transition:all .3s;animation:pulse 2s infinite}
+    .btn-gen:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(16,185,129,.45);animation:none}
+    @keyframes pulse{0%,100%{box-shadow:0 0 15px rgba(16,185,129,.25)}50%{box-shadow:0 0 30px rgba(16,185,129,.5)}}
+
+    .sec{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin:13px 0 8px;display:flex;align-items:center;gap:7px}
+    .sec::after{content:'';flex:1;height:1px;background:var(--border)}
+    .alert{padding:9px 12px;border-radius:7px;font-size:11px;display:flex;align-items:flex-start;gap:7px;margin-bottom:10px}
+    .alert-info{background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);color:#93c5fd}
+    .tool-row{display:flex;align-items:center;gap:8px;padding:7px 9px;background:var(--bg4);border:1px solid var(--border);border-radius:7px;margin-bottom:6px}
+    .tool-num{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber);font-weight:600;min-width:48px}
+    .tool-name{font-size:11px;font-weight:600}.tool-tip{font-size:9px;color:var(--t3)}
+    .active-tag{margin-left:auto;font-size:9px;color:var(--green);background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);padding:2px 7px;border-radius:4px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">⚙️</div>
+      <div>
+        <h1>CNC Torna G-Code Üretici</h1>
+        <p>Teknik Resim / PDF → Otomatik G-Code • torna.knowledge-arena.xyz</p>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge b-blue">Fanuc 0i/21i</span>
+      <span class="badge b-green">Siemens 840D</span>
+    </div>
+  </header>
+
+  <!-- GRID -->
+  <div class="grid">
+
+    <!-- ═══ LEFT ═══ -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+
+      <!-- Upload -->
+      <div class="panel">
+        <div class="ph"><div class="ph-icon ic-blue">📐</div>
+          <div><div class="pt">Teknik Resim / PDF Yükle</div><div class="ps">PNG, JPG, PDF desteklenir</div></div>
+        </div>
+        <div class="pb">
+          <div class="upload" id="uploadZone" onclick="document.getElementById('fileInput').click()"
+            ondragover="event.preventDefault();this.classList.add('drag')"
+            ondragleave="this.classList.remove('drag')"
+            ondrop="event.preventDefault();this.classList.remove('drag');handleFile(event.dataTransfer.files[0])">
+            <input type="file" id="fileInput" accept="image/*,.pdf" onchange="handleFile(this.files[0])">
+            <div id="uploadContent">
+              <div class="upload-icon">🖼️</div>
+              <div class="upload-title">Teknik Resim veya PDF Yükle</div>
+              <div class="upload-sub">tıkla veya sürükle bırak</div>
+            </div>
+            <img id="upload-preview" alt="Önizleme">
+            <div class="progress" id="pdfProgress"><div class="progress-bar" id="pdfBar"></div></div>
+            <div class="pdf-info" id="pdfInfo"></div>
+          </div>
+          <div class="alert alert-info" style="margin-top:10px;margin-bottom:0">
+            <span>ℹ️</span><span>PDF'nin ilk sayfası önizleme olarak gösterilir. Koordinatları tablodan manuel girin.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Material & Machine -->
+      <div class="panel">
+        <div class="ph"><div class="ph-icon ic-orange">⚙️</div>
+          <div><div class="pt">Malzeme & Tezgah</div><div class="ps">İş parçası ve kesme parametreleri</div></div>
+        </div>
+        <div class="pb">
+          <div class="fg"><label>Malzeme Tipi</label>
+            <select id="material" onchange="applyMatParams()">
+              <option value="steel_mild">Yumuşak Çelik (C45)</option>
+              <option value="steel_hard">Sert Çelik (42CrMo4)</option>
+              <option value="stainless">Paslanmaz Çelik (304)</option>
+              <option value="aluminum">Alüminyum (6061)</option>
+              <option value="brass">Pirinç</option>
+              <option value="cast_iron">Dökme Demir</option>
+              <option value="plastic">Plastik / Delrin</option>
+            </select></div>
+          <div class="fr">
+            <div class="fg"><label>Ham Çap (mm)</label><input type="number" id="stockD" value="60" min="1" max="500" step="0.1" onchange="drawCanvas()"></div>
+            <div class="fg"><label>Ham Uzunluk (mm)</label><input type="number" id="stockL" value="120" min="1" max="2000" step="0.1" onchange="drawCanvas()"></div>
+          </div>
+          <div class="sec">Kesme Parametreleri</div>
+          <div class="fr">
+            <div class="fg"><label>Vc — Kesme Hızı (m/dak)</label><input type="number" id="vc" value="200" min="10" max="1000"></div>
+            <div class="fg"><label>f — İlerleme (mm/dev)</label><input type="number" id="feed" value="0.2" step="0.01" min="0.01" max="2"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>ap — Paso Derinliği (mm)</label><input type="number" id="ap" value="2.0" step="0.1" min="0.1" max="10"></div>
+            <div class="fg"><label>Son İşlem Payı (mm)</label><input type="number" id="fa" value="0.3" step="0.05" min="0" max="2"></div>
+          </div>
+          <div class="sec">CNC Kontrolcü</div>
+          <div class="fr">
+            <div class="fg"><label>Kontrolcü</label>
+              <select id="ctrl">
+                <option value="fanuc">Fanuc 0i / 21i</option>
+                <option value="siemens">Siemens 840D sl</option>
+                <option value="haas">Haas NGC</option>
+              </select></div>
+            <div class="fg"><label>Soğutma</label>
+              <select id="coolant">
+                <option value="M08">Su Bazlı (M08)</option>
+                <option value="M07">Sis (M07)</option>
+                <option value="M09">Soğutmasız (M09)</option>
+              </select></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Güvenli Z (mm)</label><input type="number" id="safeZ" value="5" step="0.5" min="1" max="50"></div>
+            <div class="fg"><label>Program No</label><input type="text" id="progNum" value="O1001"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ops -->
+      <div class="panel">
+        <div class="ph"><div class="ph-icon ic-green">🔧</div>
+          <div><div class="pt">Torna Operasyonları</div><div class="ps">Dahil edilecekleri seçin</div></div>
+        </div>
+        <div class="pb" id="opsList"></div>
+      </div>
+    </div>
+
+    <!-- ═══ CENTER ═══ -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+
+      <!-- Canvas -->
+      <div class="canvas-wrap">
+        <div class="ctb">
+          <div class="ctb-title">📊 Profil Düzenleyici & 2D Simülasyon</div>
+          <div class="coord-disp" id="coordDisp">X: 0.00   Z: 0.00</div>
+          <button class="btn btn-outline btn-sm" onclick="clearProfile()">🗑️ Temizle</button>
+          <button class="btn btn-outline btn-sm" onclick="undoLast()">↩️ Geri</button>
+          <button class="btn btn-outline btn-sm" onclick="loadExample()">📁 Örnek</button>
+          <button class="btn btn-outline btn-sm" onclick="runSim()">▶️ Sim</button>
+        </div>
+        <canvas id="canvas" width="800" height="400"
+          onmousemove="canvasMove(event)" onclick="canvasClick(event)"></canvas>
+        <div class="cinfo">
+          <span><span class="dot" style="background:#3b82f6"></span>Kontur</span>
+          <span><span class="dot" style="background:#10b981"></span>Ham Malzeme</span>
+          <span><span class="dot" style="background:#ef4444"></span>Son Form</span>
+          <span style="margin-left:auto" id="ptCount">📍 0 nokta</span>
+        </div>
+      </div>
+
+      <!-- Profile table -->
+      <div class="panel">
+        <div class="ph"><div class="ph-icon ic-blue">📋</div>
+          <div><div class="pt">Kontur Koordinatları</div><div class="ps">X = çap, Z = eksen uzunluğu (mm)</div></div>
+          <div style="margin-left:auto;display:flex;gap:6px">
+            <button class="btn btn-outline btn-sm" onclick="addRow()">+ Nokta Ekle</button>
+            <button class="btn btn-outline btn-sm" onclick="sortByZ()">⇅ Z Sırala</button>
+          </div>
+        </div>
+        <div class="pb" style="padding:10px">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>#</th><th>X Çap</th><th>Z Uzunluk</th><th>Hareket Tipi</th><th>Pah / R</th><th></th></tr></thead>
+              <tbody id="profileRows"></tbody>
+            </table>
+          </div>
+          <p id="emptyMsg" style="font-size:11px;color:var(--t3);text-align:center;padding:10px 0">
+            Canvas'a tıklayarak nokta ekleyin veya "📁 Örnek" butonunu kullanın
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ RIGHT ═══ -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+
+      <button class="btn-gen" onclick="generateGCode()">⚡ G-CODE ÜRET</button>
+
+      <!-- Stats -->
+      <div class="stats">
+        <div class="stat"><div class="sv" id="sLines">0</div><div class="sl">Satır</div></div>
+        <div class="stat"><div class="sv" id="sTime">0</div><div class="sl">Dk (est.)</div></div>
+        <div class="stat"><div class="sv" id="sOps">0</div><div class="sl">Operasyon</div></div>
+        <div class="stat"><div class="sv" id="sTools">0</div><div class="sl">Takım</div></div>
+      </div>
+
+      <!-- G-Code output -->
+      <div class="panel" style="flex:1">
+        <div class="ph"><div class="ph-icon ic-green">💾</div>
+          <div><div class="pt">G-Code Çıktısı</div><div class="ps">Fanuc / Siemens uyumlu .nc</div></div>
+          <div style="margin-left:auto;display:flex;gap:6px">
+            <button class="btn btn-outline btn-sm" id="copyBtn" onclick="copyGCode()">📋 Kopyala</button>
+            <button class="btn btn-success btn-sm" onclick="downloadGCode()">⬇️ İndir</button>
+          </div>
+        </div>
+        <div class="pb" style="padding:10px">
+          <div class="gc-out" id="gcOut">
+<span class="gc-comment">; ─────────────────────────────────────────────────</span>
+<span class="gc-comment">; CNC Torna G-Code Üretici</span>
+<span class="gc-comment">; torna.knowledge-arena.xyz</span>
+<span class="gc-comment">;</span>
+<span class="gc-comment">; 1. Teknik resim veya PDF yükleyin</span>
+<span class="gc-comment">; 2. Kontur koordinatlarını girin</span>
+<span class="gc-comment">; 3. Operasyonları seçin</span>
+<span class="gc-comment">; 4. ⚡ G-CODE ÜRET butonuna basın</span>
+<span class="gc-comment">;</span>
+<span class="gc-comment">; Desteklenen döngüler:</span>
+<span class="gc-comment">;   G72 G71 G70 G83 G75 G76 G01</span>
+<span class="gc-comment">; ─────────────────────────────────────────────────</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tool list -->
+      <div class="panel">
+        <div class="ph"><div class="ph-icon ic-purple">🔩</div>
+          <div><div class="pt">Takım Listesi (Tool List)</div></div>
+        </div>
+        <div class="pb" style="padding:10px" id="toolList">
+          <p style="font-size:11px;color:var(--t3);text-align:center;padding:10px 0">G-Code üretilince takımlar görünür</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── OPERATIONS ──────────────────────────────────────────────────────────────
+const OPS = [
+  {id:'face',      name:'Yüz Tornalama',       desc:'Alın düzeltme (G72)',        gcode:'G72', on:true },
+  {id:'rough_od',  name:'Kaba Dış Tornalama',  desc:'Çevrim döngüsü (G71)',       gcode:'G71', on:true },
+  {id:'finish_od', name:'İnce Dış Tornalama',  desc:'Son paso (G70)',             gcode:'G70', on:true },
+  {id:'bore',      name:'İç Çap Tornalama',    desc:'Boring döngüsü (G71)',       gcode:'G71', on:false},
+  {id:'drill',     name:'Matkap Delme',         desc:'Kırıklı delme (G83)',        gcode:'G83', on:false},
+  {id:'groove',    name:'Kanal Açma',           desc:'Kanal döngüsü (G75)',        gcode:'G75', on:false},
+  {id:'thread',    name:'Diş Açma',             desc:'Metrik diş döngüsü (G76)',   gcode:'G76', on:false},
+  {id:'cutoff',    name:'Kesme / Koparma',      desc:'Parça koparma (G01)',        gcode:'G01', on:false},
+]
+
+const MAT = {
+  steel_mild: {vc:200,f:.20,ap:2.0}, steel_hard:{vc:130,f:.15,ap:1.5},
+  stainless:  {vc:120,f:.15,ap:1.5}, aluminum:  {vc:400,f:.30,ap:3.0},
+  brass:      {vc:300,f:.25,ap:2.5}, cast_iron: {vc:150,f:.20,ap:2.0},
+  plastic:    {vc:500,f:.30,ap:3.0},
+}
+
+function applyMatParams(){
+  const p=MAT[document.getElementById('material').value]
+  if(!p)return
+  document.getElementById('vc').value=p.vc
+  document.getElementById('feed').value=p.f
+  document.getElementById('ap').value=p.ap
+}
+
+// render ops
+function renderOps(){
+  document.getElementById('opsList').innerHTML=OPS.map((op,i)=>`
+    <div class="op-item${op.on?' sel':''}" onclick="toggleOp(${i})">
+      <input type="checkbox" ${op.on?'checked':''} onclick="event.stopPropagation();toggleOp(${i})">
+      <div class="op-label"><div class="op-name">${op.name}</div><div class="op-desc">${op.desc}</div></div>
+      <span class="op-badge">${op.gcode}</span>
+    </div>`).join('')
+}
+function toggleOp(i){OPS[i].on=!OPS[i].on;renderOps()}
+
+// ─── PROFILE STATE ────────────────────────────────────────────────────────────
+let profile = []
+
+function addRow(x='',z='',move='G01',r=''){
+  const tbody=document.getElementById('profileRows')
+  const idx=tbody.rows.length
+  const tr=document.createElement('tr')
+  tr.innerHTML=`
+    <td style="color:var(--t3);padding-left:8px;font-size:10px">${idx+1}</td>
+    <td><input type="number" step="0.01" value="${x}" placeholder="0" oninput="syncProfile()"></td>
+    <td><input type="number" step="0.01" value="${z}" placeholder="0" oninput="syncProfile()"></td>
+    <td><select oninput="syncProfile()">
+      <option ${move==='G00'?'selected':''}>G00</option>
+      <option ${move==='G01'?'selected':''}>G01</option>
+      <option ${move==='G02'?'selected':''}>G02</option>
+      <option ${move==='G03'?'selected':''}>G03</option>
+    </select></td>
+    <td><input type="number" step="0.01" value="${r}" placeholder="0" oninput="syncProfile()"></td>
+    <td><button class="del-btn" onclick="this.closest('tr').remove();renum();syncProfile()">✕</button></td>`
+  tbody.appendChild(tr)
+  renum(); syncProfile()
+}
+
+function renum(){
+  const rows=document.getElementById('profileRows').rows
+  for(let i=0;i<rows.length;i++) rows[i].cells[0].textContent=i+1
+}
+
+function syncProfile(){
+  profile=[]
+  for(const row of document.getElementById('profileRows').rows){
+    const inputs=row.querySelectorAll('input')
+    const sel=row.querySelector('select')
+    profile.push({
+      x:parseFloat(inputs[0].value)||0,
+      z:parseFloat(inputs[1].value)||0,
+      move:sel.value,
+      r:parseFloat(inputs[2].value)||0
+    })
+  }
+  document.getElementById('emptyMsg').style.display=profile.length?'none':'block'
+  document.getElementById('ptCount').textContent=`📍 ${profile.length} nokta`
+  drawCanvas()
+}
+
+function clearProfile(){document.getElementById('profileRows').innerHTML='';profile=[];syncProfile()}
+function undoLast(){
+  const t=document.getElementById('profileRows')
+  if(t.rows.length>0){t.deleteRow(t.rows.length-1);renum();syncProfile()}
+}
+function sortByZ(){
+  const rows=Array.from(document.getElementById('profileRows').rows)
+  rows.sort((a,b)=>parseFloat(a.cells[2].querySelector('input').value)-parseFloat(b.cells[2].querySelector('input').value))
+  const tbody=document.getElementById('profileRows')
+  rows.forEach(r=>tbody.appendChild(r))
+  renum();syncProfile()
+}
+
+const EXAMPLE=[
+  [0,0,'G00',0],[30,0,'G01',0],[30,-20,'G01',2],[40,-20,'G01',0],
+  [40,-50,'G01',0],[50,-50,'G02',5],[50,-90,'G01',0],[60,-90,'G01',0],[60,-110,'G01',0]
+]
+function loadExample(){
+  clearProfile()
+  EXAMPLE.forEach(([x,z,m,r])=>addRow(x,z,m,r))
+  document.getElementById('stockD').value=65
+  document.getElementById('stockL').value=115
+  syncProfile()
+}
+
+// ─── CANVAS ───────────────────────────────────────────────────────────────────
+const CVS=document.getElementById('canvas')
+const CTX=CVS.getContext('2d')
+const SC=3.2,OX=65
+
+function oy(){return CVS.height/2+30}
+function toCvs(x,z){return{cx:OX+(-z)*SC,cy:oy()-(x/2)*SC}}
+function fromCvs(cx,cy){return{x:((oy()-cy)/SC)*2,z:-(cx-OX)/SC}}
+
+function drawCanvas(){
+  const W=CVS.width,H=CVS.height,oy_=oy()
+  CTX.clearRect(0,0,W,H)
+  CTX.fillStyle='#060c1a';CTX.fillRect(0,0,W,H)
+
+  // grid
+  CTX.strokeStyle='rgba(30,45,79,.6)';CTX.lineWidth=.5
+  const gs=10*SC
+  for(let x=OX%gs;x<W;x+=gs){CTX.beginPath();CTX.moveTo(x,0);CTX.lineTo(x,H);CTX.stroke()}
+  for(let y=oy_%gs;y<H;y+=gs){CTX.beginPath();CTX.moveTo(0,y);CTX.lineTo(W,y);CTX.stroke()}
+
+  // axes
+  CTX.strokeStyle='rgba(71,85,105,.7)';CTX.lineWidth=1
+  CTX.beginPath();CTX.moveTo(OX,0);CTX.lineTo(OX,H);CTX.stroke()
+  CTX.beginPath();CTX.moveTo(0,oy_);CTX.lineTo(W,oy_);CTX.stroke()
+  CTX.fillStyle='#374151';CTX.font='10px Inter'
+  CTX.fillText('Z→',W-22,oy_-5);CTX.fillText('X↑',OX+4,14)
+
+  // ticks
+  CTX.fillStyle='#2d3748';CTX.font='8px JetBrains Mono'
+  for(let mm=0;mm<=200;mm+=20){
+    const cx=OX+mm*SC
+    CTX.fillText(`-${mm}`,cx-8,oy_+12)
+    CTX.beginPath();CTX.strokeStyle='rgba(71,85,105,.4)'
+    CTX.moveTo(cx,oy_-3);CTX.lineTo(cx,oy_+3);CTX.stroke()
+  }
+  for(let mm=0;mm<=120;mm+=10){
+    CTX.fillStyle='#2d3748'
+    CTX.fillText(`${mm*2}`,OX-28,oy_-mm*SC/2+3)
+  }
+
+  // stock
+  const sd=parseFloat(document.getElementById('stockD').value)||60
+  const sl=parseFloat(document.getElementById('stockL').value)||120
+  const sw=sl*SC,sh=(sd/2)*SC
+  CTX.fillStyle='rgba(16,185,129,.05)';CTX.strokeStyle='rgba(16,185,129,.25)'
+  CTX.lineWidth=1.5;CTX.setLineDash([4,4])
+  CTX.fillRect(OX,oy_-sh,sw,sh)
+  CTX.strokeRect(OX,oy_-sh,sw,sh)
+  CTX.setLineDash([])
+
+  if(profile.length<2) return
+
+  // top profile
+  CTX.strokeStyle='#ef4444';CTX.lineWidth=2.5;CTX.shadowColor='#ef4444';CTX.shadowBlur=5
+  CTX.beginPath()
+  profile.forEach((p,i)=>{const{cx,cy}=toCvs(p.x,p.z);i?CTX.lineTo(cx,cy):CTX.moveTo(cx,cy)})
+  CTX.stroke()
+
+  // fill
+  CTX.beginPath()
+  const fp=toCvs(profile[0].x,profile[0].z)
+  CTX.moveTo(fp.cx,oy_)
+  profile.forEach(p=>{const{cx,cy}=toCvs(p.x,p.z);CTX.lineTo(cx,cy)})
+  const lp=toCvs(profile[profile.length-1].x,profile[profile.length-1].z)
+  CTX.lineTo(lp.cx,oy_);CTX.closePath()
+  CTX.fillStyle='rgba(239,68,68,.06)';CTX.fill()
+
+  // mirror bottom
+  CTX.shadowBlur=0;CTX.strokeStyle='rgba(239,68,68,.28)';CTX.lineWidth=1.2
+  CTX.beginPath()
+  profile.forEach((p,i)=>{const{cx,cy}=toCvs(p.x,p.z);const my=oy_+(oy_-cy);i?CTX.lineTo(cx,my):CTX.moveTo(cx,my)})
+  CTX.stroke()
+
+  // points
+  profile.forEach((p,i)=>{
+    const{cx,cy}=toCvs(p.x,p.z)
+    CTX.beginPath();CTX.arc(cx,cy,4,0,Math.PI*2)
+    CTX.fillStyle=i===0?'#10b981':'#3b82f6'
+    CTX.shadowColor=i===0?'#10b981':'#3b82f6';CTX.shadowBlur=7
+    CTX.fill();CTX.shadowBlur=0
+    CTX.fillStyle='#94a3b8';CTX.font='8px JetBrains Mono'
+    CTX.fillText(`P${i+1}`,cx+5,cy-5)
+  })
+}
+
+function canvasMove(e){
+  const r=CVS.getBoundingClientRect()
+  const sx=CVS.width/r.width,sy=CVS.height/r.height
+  const{x,z}=fromCvs((e.clientX-r.left)*sx,(e.clientY-r.top)*sy)
+  document.getElementById('coordDisp').textContent=
+    `X:${x.toFixed(2).padStart(7)}  Z:${z.toFixed(2).padStart(8)}`
+}
+
+function canvasClick(e){
+  const r=CVS.getBoundingClientRect()
+  const sx=CVS.width/r.width,sy=CVS.height/r.height
+  const{x,z}=fromCvs((e.clientX-r.left)*sx,(e.clientY-r.top)*sy)
+  if(x<0||z>0)return
+  addRow(+x.toFixed(2),+z.toFixed(2),'G01',0)
+}
+
+let simT=null
+function runSim(){
+  if(!profile.length)return
+  if(simT){clearInterval(simT);simT=null;drawCanvas();return}
+  drawCanvas();let i=0
+  simT=setInterval(()=>{
+    if(i>=profile.length){clearInterval(simT);simT=null;return}
+    const{cx,cy}=toCvs(profile[i].x,profile[i].z)
+    CTX.beginPath();CTX.arc(cx,cy,7,0,Math.PI*2)
+    CTX.fillStyle='#f59e0b';CTX.shadowColor='#f59e0b';CTX.shadowBlur=14
+    CTX.fill();CTX.shadowBlur=0;i++
+  },350)
+}
+
+// ─── FILE UPLOAD ─────────────────────────────────────────────────────────────
+async function handleFile(file){
+  if(!file)return
+  if(file.type==='application/pdf') await parsePdf(file)
+  else if(file.type.startsWith('image/')){
+    const url=URL.createObjectURL(file)
+    document.getElementById('upload-preview').src=url
+    document.getElementById('upload-preview').style.display='block'
+    document.getElementById('uploadContent').style.display='none'
+  }
+}
+
+async function parsePdf(file){
+  const prog=document.getElementById('pdfProgress')
+  const bar=document.getElementById('pdfBar')
+  const info=document.getElementById('pdfInfo')
+  prog.style.display='block';bar.style.width='10%';info.style.display='block'
+  info.textContent='PDF yükleniyor...'
+  try{
+    if(!window.pdfjsLib){
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script')
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
+        s.onload=res;s.onerror=rej
+        document.head.appendChild(s)
+      })
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc=
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+    }
+    bar.style.width='35%';info.textContent='PDF parse ediliyor...'
+    const ab=await file.arrayBuffer()
+    const pdf=await window.pdfjsLib.getDocument({data:ab}).promise
+    bar.style.width='65%';info.textContent=`${pdf.numPages} sayfa bulundu`
+    const page=await pdf.getPage(1)
+    const vp=page.getViewport({scale:1.5})
+    const tmp=document.createElement('canvas')
+    tmp.width=vp.width;tmp.height=vp.height
+    await page.render({canvasContext:tmp.getContext('2d'),viewport:vp}).promise
+    document.getElementById('upload-preview').src=tmp.toDataURL()
+    document.getElementById('upload-preview').style.display='block'
+    document.getElementById('uploadContent').style.display='none'
+    bar.style.width='100%'
+    info.textContent=`✅ ${file.name} — Koordinatları tablodan girin`
+  }catch{info.textContent='⚠️ PDF okunamadı. PNG/JPG olarak kaydedin.'}
+}
+
+// ─── G-CODE ──────────────────────────────────────────────────────────────────
+let gcode=''
+
+function hl(line){
+  const e=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  if(line.startsWith(';'))return`<span class="gc-comment">${e(line)}</span>`
+  if(!line.trim()||line.trim()==='%')return`<span class="gc-hdr">${e(line)}</span>`
+  if(/^O\d/.test(line))return`<span class="gc-param">${e(line)}</span>`
+  let c=e(line)
+  c=c.replace(/\b(T\d{4})\b/g,'<span class="gc-tool">$1</span>')
+  c=c.replace(/\b(G00)\b/g,'<span class="gc-rapid">$1</span>')
+  c=c.replace(/\b(G0[123])\b/g,'<span class="gc-feed">$1</span>')
+  c=c.replace(/\b(G(?:50|70|71|72|75|76|80|83|96|97|21|18|40))\b/g,'<span class="gc-cycle">$1</span>')
+  c=c.replace(/\b(M0[3-9]|M30)\b/g,'<span class="gc-spindle">$1</span>')
+  c=c.replace(/([XZUF])([-\d.]+)/g,'<span class="gc-coord">$1</span><span class="gc-param">$2</span>')
+  c=c.replace(/\b(N\d+)\b/g,'<span class="gc-hdr">$1</span>')
+  c=c.replace(/(;.*)$/,'<span class="gc-comment">$1</span>')
+  return c
+}
+
+function v(id){return document.getElementById(id).value}
+function vn(id){return parseFloat(v(id))||0}
+
+function generateGCode(){
+  if(profile.length<2){alert('En az 2 kontur noktası girin!');return}
+  const vc_=vn('vc'),f=vn('feed'),ap_=vn('ap'),fa=vn('fa'),safeZ_=vn('safeZ')
+  const sd=vn('stockD'),sl=vn('stockL'),pn=v('progNum')||'O1001'
+  const coolant=v('coolant'),ctrl=v('ctrl')
+  const active=OPS.filter(o=>o.on)
+  const maxX=Math.max(...profile.map(p=>p.x))
+  const minX=Math.max(Math.min(...profile.filter(p=>p.x>0).map(p=>p.x)),10)
+  const rpmMax=Math.round(vc_*1000/(Math.PI*minX))
+  const now=new Date()
+  const ds=now.toLocaleDateString('tr-TR')+' '+now.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})
+  const matN=document.getElementById('material').options[document.getElementById('material').selectedIndex].text
+
+  const L=[]
+  const p=(...args)=>L.push(...args)
+
+  p(
+    `; ════════════════════════════════════════════════`,
+    `; PROGRAM : ${pn}`,`; Tarih   : ${ds}`,
+    `; Malzeme : ${matN}`,`; Ham     : Ø${sd} mm x ${sl} mm`,
+    `; Kesme   : Vc=${vc_} m/dak | f=${f} mm/dev | ap=${ap_} mm`,
+    `; Kontrolcü: ${ctrl.toUpperCase()}`,
+    `; ════════════════════════════════════════════════`,
+    ``,pn,
+    `G21 G18 G40 G80     ; Metrik, XZ düzlemi`,
+    `G50 S${rpmMax}          ; Maks dev/dak ${rpmMax}`,
+    `G96 S${vc_} M03       ; Sabit yüzey hızı ${vc_} m/dak`,``
+  )
+
+  let opN=0,tlN=0
+
+  if(active.find(o=>o.id==='face')){
+    opN++;tlN++
+    p(`; ─── OP${opN}: YÜZ TORNALAMA ─────────────────`,
+      `T0101 M06            ; T1 - Alın kalem CNMG`,`${coolant}`,
+      `G00 X${sd+5} Z${safeZ_}`,`G00 X${sd+2} Z0.5`,
+      `G01 X-1.0 F${(f*.8).toFixed(3)}`,`G00 Z${safeZ_}`,`G00 X${sd+5}`,``)
+  }
+  if(active.find(o=>o.id==='drill')){
+    opN++;tlN++
+    const dd=15,dep=Math.min(sl*.6,80).toFixed(1)
+    p(`; ─── OP${opN}: MATKAP DELME ───────────────────`,
+      `T0202 M06            ; T2 - Matkap Ø${dd}mm`,
+      `G97 S${Math.round(vc_*1000/(Math.PI*dd))} M03`,
+      `G00 X0 Z${safeZ_}`,`G83 X0 Z-${dep} Q3000 F${(f*.5).toFixed(3)}`,
+      `G80`,`G00 Z${safeZ_}`,`G96 S${vc_} M03`,``)
+  }
+  if(active.find(o=>o.id==='rough_od')){
+    opN++;tlN++
+    p(`; ─── OP${opN}: KABA DIŞ TORNALAMA (G71) ────────`,
+      `T0303 M06            ; T3 - Dış kalem TNMG 160408`,`${coolant}`,
+      `G96 S${vc_} M03`,`G00 X${sd+5} Z${safeZ_}`,`G00 X${sd+2} Z1.0`,
+      `G71 U${ap_.toFixed(2)} R0.5`,
+      `G71 P100 Q200 U${fa.toFixed(3)} W${(fa/2).toFixed(3)} F${f.toFixed(3)}`,``)
+    p(`N100 G00 X${profile[0].x.toFixed(2)} Z1.0`)
+    profile.forEach((pt,i)=>{
+      let ext=''
+      if((pt.move==='G02'||pt.move==='G03')&&pt.r>0)ext=` R${pt.r.toFixed(2)}`
+      else if(pt.move==='G01'&&pt.r!==0)ext=` ${pt.r>0?'C':'R'}${Math.abs(pt.r).toFixed(2)}`
+      const ln=i<profile.length-1?`N${110+i*10} `:'N200 '
+      p(`${ln}${pt.move} X${pt.x.toFixed(2)} Z${pt.z.toFixed(2)}${ext} F${f.toFixed(3)}`)
+    })
+    p(``)
+  }
+  if(active.find(o=>o.id==='finish_od')){
+    opN++
+    p(`; ─── OP${opN}: İNCE DIŞ TORNALAMA (G70) ────────`,
+      `G96 S${Math.round(vc_*1.2)} M03      ; İnce işlem`,
+      `G70 P100 Q200 F${(f*.6).toFixed(3)}`,`G00 X${sd+10} Z${safeZ_}`,``)
+  }
+  if(active.find(o=>o.id==='groove')){
+    opN++;tlN++
+    const gZ=(sl*.4).toFixed(1)
+    p(`; ─── OP${opN}: KANAL AÇMA (G75) ─────────────`,
+      `T0404 M06            ; T4 - Kanal kalemi 3mm`,
+      `G97 S${Math.round(vc_*1000/(Math.PI*maxX)*.7)} M03`,
+      `G00 X${maxX+5} Z${safeZ_}`,`G00 X${maxX+2} Z-${gZ}`,
+      `G75 R0.5`,`G75 X${(maxX-10).toFixed(1)} Z-${gZ} P2000 Q3000 F${(f*.5).toFixed(3)}`,
+      `G00 X${maxX+10}`,`G00 Z${safeZ_}`,``)
+  }
+  if(active.find(o=>o.id==='thread')){
+    opN++;tlN++
+    const pitch=1.5,tdep=(pitch*.6495)
+    p(`; ─── OP${opN}: DİŞ AÇMA (G76) ─────────────────`,
+      `T0505 M06            ; T5 - Diş kalemi 60°`,
+      `G97 S${Math.round(vc_*1000/(Math.PI*maxX)*.5)} M03`,
+      `G00 X${maxX+5} Z${safeZ_}`,`G00 X${maxX+2} Z4.0`,
+      `G76 P020060 Q100 R0.05`,
+      `G76 X${(maxX-tdep*2).toFixed(3)} Z-${Math.min(sl*.3,30).toFixed(1)} R0 P${Math.round(tdep*1000)} Q300 F${pitch.toFixed(3)}`,
+      `G00 X${maxX+10}`,`G00 Z${safeZ_}`,``)
+  }
+  if(active.find(o=>o.id==='bore')){
+    opN++;tlN++
+    const bd=20,bdep=Math.min(sl*.5,60).toFixed(1)
+    p(`; ─── OP${opN}: İÇ ÇAP TORNALAMA ────────────────`,
+      `T0606 M06            ; T6 - İç kalem CCMT`,
+      `G96 S${Math.round(vc_*.8)} M03`,`G00 X${bd-5} Z${safeZ_}`,
+      `G71 U${(ap_*.5).toFixed(2)} R0.3`,
+      `G71 P300 Q400 U-${fa.toFixed(2)} W${(fa/2).toFixed(2)} F${f.toFixed(3)}`,
+      `N300 G00 X${bd+2}`,`      G01 Z-${bdep} F${f.toFixed(3)}`,
+      `N400 G00 Z${safeZ_}`,`G70 P300 Q400 F${(f*.6).toFixed(3)}`,`G00 Z${safeZ_}`,``)
+  }
+  if(active.find(o=>o.id==='cutoff')){
+    opN++;tlN++
+    p(`; ─── OP${opN}: KESME / KOPARMA ──────────────`,
+      `T0707 M06            ; T7 - Kesme kalemi 3mm`,
+      `G97 S${Math.round(vc_*1000/(Math.PI*sd)*.6)} M03`,
+      `G00 X${sd+5} Z-${(sl-1).toFixed(1)}`,`G01 X-0.5 F${(f*.3).toFixed(3)}`,
+      `G00 X${sd+10}`,`G00 Z${safeZ_}`,``)
+  }
+
+  p(`; ─── PROGRAM SONU ───────────────────────────────`,
+    `M09                  ; Soğutma kapat`,
+    `G00 X200.0 Z200.0    ; Güvenli konum`,
+    `M05                  ; Mil dur`,`M30                  ; Program sonu ve sar`,`%`)
+
+  gcode=L.join('\n')
+  document.getElementById('gcOut').innerHTML=L.map(hl).join('\n')
+  document.getElementById('gcOut').scrollTop=0
+  document.getElementById('sLines').textContent=L.length
+  document.getElementById('sOps').textContent=opN
+  document.getElementById('sTools').textContent=tlN
+  document.getElementById('sTime').textContent=Math.round(profile.length*sl*.015/f+opN*3)
+
+  // tool list
+  const TL={face:{n:'T0101',name:'Alın Kalem',tip:'CNMG 120408'},
+    drill:{n:'T0202',name:'Matkap Ø15',tip:'HSS / Karbür'},
+    rough_od:{n:'T0303',name:'Dış Kalem',tip:'TNMG 160408'},
+    finish_od:{n:'T0303',name:'Dış Kalem',tip:'TNMG — İnce paso'},
+    groove:{n:'T0404',name:'Kanal Kalemi',tip:'3mm Genişlik'},
+    thread:{n:'T0505',name:'Diş Kalemi',tip:'60° ISO Profil'},
+    bore:{n:'T0606',name:'İç Kalem',tip:'CCMT 060204'},
+    cutoff:{n:'T0707',name:'Kesme Kalemi',tip:'3mm Genişlik'}}
+  document.getElementById('toolList').innerHTML=
+    active.map(op=>{const t=TL[op.id];if(!t)return''
+      return`<div class="tool-row"><span class="tool-num">${t.n}</span>
+      <div><div class="tool-name">${t.name}</div><div class="tool-tip">${t.tip}</div></div>
+      <span class="active-tag">AKTİF</span></div>`}).join('')
+}
+
+function copyGCode(){
+  if(!gcode){alert('Önce G-Code üretin!');return}
+  navigator.clipboard.writeText(gcode).then(()=>{
+    const btn=document.getElementById('copyBtn')
+    btn.textContent='✅ Kopyalandı'
+    setTimeout(()=>btn.textContent='📋 Kopyala',2200)
+  })
+}
+
+function downloadGCode(){
+  if(!gcode){alert('Önce G-Code üretin!');return}
+  const a=document.createElement('a')
+  a.href=URL.createObjectURL(new Blob([gcode],{type:'text/plain'}))
+  a.download=`${(v('progNum')||'O1001').replace(/[^a-zA-Z0-9]/g,'_')}.nc`
+  a.click()
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+renderOps()
+drawCanvas()
+loadExample()
+</script>
+</body>
+</html>
