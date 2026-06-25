@@ -4,130 +4,152 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CNC Torna G-Code Üretici</title>
-  <meta name="description" content="Teknik resim veya PDF yükleyerek CNC torna G-code otomatik üretin. Fanuc ve Siemens 840D uyumlu.">
+  <meta name="description" content="Teknik resimden CNC torna G-code üretici. Fanuc ve Siemens uyumlu.">
   <meta name="robots" content="noindex, nofollow">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #0a0e1a; --bg2: #0f1629; --bg3: #131c35; --bg4: #0d1526;
-      --border: #1e2d4f; --border2: #2d4a7a;
-      --blue: #3b82f6; --indigo: #6366f1; --green: #10b981; --cyan: #06b6d4;
-      --amber: #f59e0b; --red: #ef4444; --purple: #8b5cf6;
-      --t1: #f1f5f9; --t2: #94a3b8; --t3: #475569;
-    }
-    *{box-sizing:border-box;margin:0;padding:0}
-    html,body{min-height:100%;background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;overflow-x:hidden}
-    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(59,130,246,.03)1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,.03)1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+:root{
+  --bg:#0a0e1a;--bg2:#0f1629;--bg3:#131c35;--bg4:#0d1526;
+  --border:#1e2d4f;--border2:#2d4a7a;
+  --blue:#3b82f6;--indigo:#6366f1;--green:#10b981;--cyan:#06b6d4;
+  --amber:#f59e0b;--red:#ef4444;--purple:#8b5cf6;--orange:#f97316;
+  --t1:#f1f5f9;--t2:#94a3b8;--t3:#475569;--t4:#1e293b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(59,130,246,.03)1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,.03)1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
 
-    .wrap{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:0 16px 48px}
-    .grid{display:grid;grid-template-columns:360px 1fr 390px;gap:16px;align-items:start}
-    @media(max-width:1100px){.grid{grid-template-columns:1fr 1fr}}
-    @media(max-width:700px){.grid{grid-template-columns:1fr}}
+.wrap{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:0 14px 50px}
 
-    /* header */
-    header{padding:18px 0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);margin-bottom:20px;flex-wrap:wrap;gap:10px}
-    .logo{display:flex;align-items:center;gap:12px}
-    .logo-icon{width:44px;height:44px;background:linear-gradient(135deg,var(--blue),var(--indigo));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 20px rgba(99,102,241,.35);flex-shrink:0}
-    .logo h1{font-size:18px;font-weight:700;background:linear-gradient(135deg,#fff 40%,#94a3b8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    .logo p{font-size:11px;color:var(--t3);margin-top:1px}
-    .badges{display:flex;gap:6px;flex-wrap:wrap}
-    .badge{padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600}
-    .b-blue{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.28);color:#93c5fd}
-    .b-green{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.28);color:#6ee7b7}
+/* HEADER */
+header{padding:18px 0 15px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:44px;height:44px;background:linear-gradient(135deg,var(--blue),var(--indigo));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 20px rgba(99,102,241,.35);flex-shrink:0}
+.logo h1{font-size:18px;font-weight:700;background:linear-gradient(135deg,#fff 40%,#94a3b8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo p{font-size:11px;color:var(--t3);margin-top:1px}
+.badges{display:flex;gap:6px;flex-wrap:wrap}
+.badge{padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600}
+.b-blue{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.28);color:#93c5fd}
+.b-green{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.28);color:#6ee7b7}
 
-    /* panel */
-    .panel{background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .2s}
-    .panel:hover{border-color:var(--border2)}
-    .ph{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.02)}
-    .ph-icon{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-    .ic-blue{background:rgba(59,130,246,.15)} .ic-green{background:rgba(16,185,129,.15)}
-    .ic-purple{background:rgba(139,92,246,.15)} .ic-orange{background:rgba(245,158,11,.15)}
-    .pt{font-size:13px;font-weight:600} .ps{font-size:10px;color:var(--t3);margin-top:1px}
-    .pb{padding:16px}
+/* LAYOUT */
+.grid{display:grid;grid-template-columns:320px 1fr 380px;gap:14px;align-items:start}
+@media(max-width:1100px){.grid{grid-template-columns:1fr 1fr}}
+@media(max-width:680px){.grid{grid-template-columns:1fr}}
 
-    /* forms */
-    .fg{margin-bottom:12px}
-    label{display:block;font-size:10px;font-weight:600;color:var(--t2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
-    input[type=number],input[type=text],select{width:100%;padding:8px 10px;background:var(--bg4);border:1px solid var(--border);border-radius:7px;color:var(--t1);font-size:12px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
-    input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
-    .fr{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+/* PANEL */
+.panel{background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .2s}
+.panel:hover{border-color:var(--border2)}
+.ph{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.02);flex-wrap:wrap}
+.ph-icon{width:29px;height:29px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.ic-blue{background:rgba(59,130,246,.15)}.ic-green{background:rgba(16,185,129,.15)}
+.ic-purple{background:rgba(139,92,246,.15)}.ic-orange{background:rgba(245,158,11,.15)}
+.ic-cyan{background:rgba(6,182,212,.15)}
+.pt{font-size:13px;font-weight:600}.ps{font-size:10px;color:var(--t3);margin-top:1px}
+.pb{padding:14px}
 
-    /* upload */
-    .upload{border:2px dashed var(--border);border-radius:12px;padding:22px 16px;text-align:center;cursor:pointer;transition:all .3s;background:var(--bg4);position:relative;overflow:hidden}
-    .upload:hover,.upload.drag{border-color:var(--blue);background:rgba(59,130,246,.07)}
-    .upload input{display:none}
-    .upload-icon{font-size:30px;margin-bottom:7px}
-    .upload-title{font-size:13px;font-weight:600;margin-bottom:3px}
-    .upload-sub{font-size:11px;color:var(--t3)}
-    #upload-preview{max-width:100%;max-height:180px;object-fit:contain;border-radius:8px;margin:0 auto;display:none}
-    .pdf-info{margin-top:8px;font-size:11px;color:var(--green);background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);padding:5px 10px;border-radius:5px;display:none}
-    .progress{width:100%;height:3px;background:var(--border);border-radius:2px;margin-top:8px;display:none;overflow:hidden}
-    .progress-bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--indigo));border-radius:2px;width:0;transition:width .3s}
+/* FORMS */
+.fg{margin-bottom:11px}
+label{display:block;font-size:10px;font-weight:600;color:var(--t2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+input[type=number],input[type=text],select{width:100%;padding:8px 10px;background:var(--bg4);border:1px solid var(--border);border-radius:7px;color:var(--t1);font-size:12px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
 
-    /* ops */
-    .op-item{display:flex;align-items:center;gap:9px;padding:10px 12px;background:var(--bg4);border:1px solid var(--border);border-radius:9px;cursor:pointer;transition:all .2s;margin-bottom:6px}
-    .op-item:hover,.op-item.sel{border-color:var(--blue);background:rgba(59,130,246,.07)}
-    .op-item input[type=checkbox]{width:14px;height:14px;accent-color:var(--blue);cursor:pointer;flex-shrink:0}
-    .op-name{font-size:12px;font-weight:600} .op-desc{font-size:10px;color:var(--t3);margin-top:1px}
-    .op-badge{padding:2px 7px;border-radius:4px;font-size:9px;font-weight:600;background:rgba(59,130,246,.12);color:#93c5fd;flex-shrink:0}
+/* UPLOAD */
+.upload{border:2px dashed var(--border);border-radius:12px;padding:20px 14px;text-align:center;cursor:pointer;transition:all .3s;background:var(--bg4)}
+.upload:hover,.upload.drag{border-color:var(--blue);background:rgba(59,130,246,.07)}
+.upload input{display:none}
+.upload-icon{font-size:28px;margin-bottom:6px}
+.upload-title{font-size:13px;font-weight:600;margin-bottom:3px}
+.upload-sub{font-size:11px;color:var(--t3)}
+#preview-img{max-width:100%;max-height:220px;object-fit:contain;border-radius:8px;display:none;margin:0 auto;border:1px solid var(--border)}
+.pdf-info{margin-top:8px;font-size:10px;color:var(--green);background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);padding:4px 10px;border-radius:5px;display:none}
+.progress{width:100%;height:3px;background:var(--border);border-radius:2px;margin-top:7px;display:none;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--indigo));width:0;transition:width .3s}
 
-    /* canvas */
-    .canvas-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-    .ctb{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.02);flex-wrap:wrap}
-    .ctb-title{font-size:12px;font-weight:600;flex:1;min-width:80px}
-    .coord-disp{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--cyan);padding:5px 9px;background:var(--bg4);border:1px solid var(--border);border-radius:6px;min-width:150px;text-align:center}
-    canvas{display:block;width:100%;cursor:crosshair;background:#060c1a}
-    .cinfo{padding:7px 14px;border-top:1px solid var(--border);display:flex;gap:14px;font-size:10px;color:var(--t3);flex-wrap:wrap}
-    .dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle}
+/* Z AXIS INFO BOX */
+.z-info{background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.2);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.z-info-title{font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.z-info-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:11px}
+.z-chip{padding:2px 8px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600}
+.z-0{background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3)}
+.z-neg{background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.25)}
+.z-info p{font-size:10px;color:var(--t3);line-height:1.5;margin-top:6px}
 
-    /* table */
-    .tbl-wrap{border:1px solid var(--border);border-radius:9px;overflow:auto;margin-bottom:10px;max-height:280px}
-    table{width:100%;border-collapse:collapse;font-size:11px}
-    thead th{padding:7px 7px;background:var(--bg4);color:var(--t3);font-weight:600;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.4px;position:sticky;top:0;z-index:1}
-    tbody tr{border-top:1px solid var(--border)}
-    tbody tr:hover{background:rgba(255,255,255,.02)}
-    tbody td{padding:4px 5px}
-    tbody td input{padding:4px 6px;font-size:11px;border-radius:5px}
-    tbody td select{padding:4px 4px;font-size:10px;border-radius:5px}
-    .del-btn{background:none;border:none;color:var(--t3);cursor:pointer;padding:3px 5px;border-radius:4px;font-size:13px;transition:all .2s;line-height:1}
-    .del-btn:hover{color:var(--red);background:rgba(239,68,68,.1)}
+/* STEP TABLE — the main input */
+.step-header{display:grid;grid-template-columns:28px 80px 80px 90px 70px 36px;gap:5px;padding:6px 8px;background:var(--bg4);border:1px solid var(--border);border-radius:8px 8px 0 0;font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;align-items:center}
+.step-row{display:grid;grid-template-columns:28px 80px 80px 90px 70px 36px;gap:5px;padding:5px 8px;border:1px solid var(--border);border-top:none;align-items:center;transition:background .15s;background:var(--bg4)}
+.step-row:last-child{border-radius:0 0 8px 8px}
+.step-row:hover{background:#101828}
+.step-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3);text-align:center}
+.step-row input{padding:5px 7px;font-size:12px}
+.step-row select{padding:5px 4px;font-size:10px}
+.del-btn{background:none;border:none;color:var(--t3);cursor:pointer;padding:4px;border-radius:4px;font-size:13px;transition:all .2s;line-height:1;width:30px;text-align:center}
+.del-btn:hover{color:var(--red);background:rgba(239,68,68,.1)}
 
-    /* gcode */
-    .gc-out{font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.7;padding:12px;background:#060c1a;border:1px solid var(--border);border-radius:9px;height:430px;overflow-y:auto;color:var(--t2);white-space:pre;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
-    .gc-out::-webkit-scrollbar{width:4px}
-    .gc-out::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-    .gc-comment{color:#374151}.gc-tool{color:var(--amber);font-weight:600}
-    .gc-rapid{color:var(--cyan)}.gc-feed{color:var(--blue)}
-    .gc-spindle{color:var(--purple)}.gc-cycle{color:var(--green)}
-    .gc-coord{color:#e2e8f0}.gc-param{color:#fbbf24}
-    .gc-hdr{color:#4b5563}
+/* Z preview col (auto-calculated, read-only) */
+.z-val{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--cyan);text-align:right;padding-right:4px}
 
-    /* stats */
-    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
-    .stat{padding:10px;background:var(--bg4);border:1px solid var(--border);border-radius:9px;text-align:center}
-    .sv{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--cyan)}
-    .sl{font-size:9px;color:var(--t3);margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+/* OPS */
+.op-item{display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--bg4);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .2s;margin-bottom:6px}
+.op-item:hover,.op-item.sel{border-color:var(--blue);background:rgba(59,130,246,.07)}
+.op-item input[type=checkbox]{width:14px;height:14px;accent-color:var(--blue);cursor:pointer;flex-shrink:0}
+.op-name{font-size:12px;font-weight:600}.op-desc{font-size:10px;color:var(--t3);margin-top:1px}
+.op-badge{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:600;background:rgba(59,130,246,.12);color:#93c5fd;flex-shrink:0;margin-left:auto}
 
-    /* buttons */
-    .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:'Inter',sans-serif;text-decoration:none}
-    .btn:hover{transform:translateY(-1px)}
-    .btn-outline{background:transparent;border:1px solid var(--border);color:var(--t2)}
-    .btn-outline:hover{border-color:var(--blue);color:var(--blue);background:rgba(59,130,246,.07)}
-    .btn-success{background:linear-gradient(135deg,#059669,var(--green));color:#fff;box-shadow:0 3px 12px rgba(16,185,129,.25)}
-    .btn-sm{padding:5px 10px;font-size:11px}
-    .btn-gen{width:100%;padding:14px;background:linear-gradient(135deg,#059669,var(--green),#34d399);color:#fff;font-size:14px;font-weight:700;border:none;border-radius:12px;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 0 20px rgba(16,185,129,.25);transition:all .3s;animation:pulse 2s infinite}
-    .btn-gen:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(16,185,129,.45);animation:none}
-    @keyframes pulse{0%,100%{box-shadow:0 0 15px rgba(16,185,129,.25)}50%{box-shadow:0 0 30px rgba(16,185,129,.5)}}
+/* CANVAS */
+.canvas-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.ctb{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.02);flex-wrap:wrap}
+.ctb-title{font-size:12px;font-weight:600;flex:1}
+canvas{display:block;width:100%;background:#060c1a}
+.cinfo{padding:6px 14px;border-top:1px solid var(--border);display:flex;gap:12px;font-size:10px;color:var(--t3);flex-wrap:wrap}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle}
 
-    .sec{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin:13px 0 8px;display:flex;align-items:center;gap:7px}
-    .sec::after{content:'';flex:1;height:1px;background:var(--border)}
-    .alert{padding:9px 12px;border-radius:7px;font-size:11px;display:flex;align-items:flex-start;gap:7px;margin-bottom:10px}
-    .alert-info{background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);color:#93c5fd}
-    .tool-row{display:flex;align-items:center;gap:8px;padding:7px 9px;background:var(--bg4);border:1px solid var(--border);border-radius:7px;margin-bottom:6px}
-    .tool-num{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber);font-weight:600;min-width:48px}
-    .tool-name{font-size:11px;font-weight:600}.tool-tip{font-size:9px;color:var(--t3)}
-    .active-tag{margin-left:auto;font-size:9px;color:var(--green);background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);padding:2px 7px;border-radius:4px}
+/* GCODE */
+.gc-out{font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.7;padding:12px;background:#060c1a;border:1px solid var(--border);border-radius:9px;height:460px;overflow-y:auto;color:var(--t2);white-space:pre;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.gc-out::-webkit-scrollbar{width:4px}
+.gc-out::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.gc-comment{color:#374151}.gc-tool{color:var(--amber);font-weight:600}
+.gc-rapid{color:var(--cyan)}.gc-feed{color:var(--blue)}
+.gc-spindle{color:var(--purple)}.gc-cycle{color:var(--green)}
+.gc-coord{color:#e2e8f0}.gc-param{color:#fbbf24}
+.gc-hdr{color:#4b5563}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.stat{padding:10px;background:var(--bg4);border:1px solid var(--border);border-radius:9px;text-align:center}
+.sv{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--cyan)}
+.sl{font-size:9px;color:var(--t3);margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px 13px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:'Inter',sans-serif}
+.btn:hover{transform:translateY(-1px)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--t2)}
+.btn-outline:hover{border-color:var(--blue);color:var(--blue);background:rgba(59,130,246,.07)}
+.btn-success{background:linear-gradient(135deg,#059669,var(--green));color:#fff;box-shadow:0 3px 10px rgba(16,185,129,.25)}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-gen{width:100%;padding:14px;background:linear-gradient(135deg,#059669,var(--green),#34d399);color:#fff;font-size:14px;font-weight:700;border:none;border-radius:12px;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 0 18px rgba(16,185,129,.25);transition:all .3s;animation:pulse 2.5s infinite}
+.btn-gen:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(16,185,129,.45);animation:none}
+@keyframes pulse{0%,100%{box-shadow:0 0 12px rgba(16,185,129,.22)}50%{box-shadow:0 0 28px rgba(16,185,129,.5)}}
+
+.sec{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin:12px 0 8px;display:flex;align-items:center;gap:7px}
+.sec::after{content:'';flex:1;height:1px;background:var(--border)}
+.alert{padding:8px 12px;border-radius:7px;font-size:11px;display:flex;align-items:flex-start;gap:7px;margin-bottom:10px}
+.alert-info{background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);color:#93c5fd}
+.alert-ok{background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);color:#6ee7b7}
+.alert-warn{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);color:#fcd34d}
+
+.tool-row{display:flex;align-items:center;gap:8px;padding:7px 9px;background:var(--bg4);border:1px solid var(--border);border-radius:7px;margin-bottom:5px}
+.tool-num{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber);font-weight:600;min-width:46px}
+.tool-name{font-size:11px;font-weight:600}.tool-tip{font-size:9px;color:var(--t3)}
+.active-tag{margin-left:auto;font-size:9px;color:var(--green);background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);padding:2px 7px;border-radius:4px}
+
+/* Scrollbar global */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
   </style>
 </head>
 <body>
@@ -139,43 +161,40 @@
       <div class="logo-icon">⚙️</div>
       <div>
         <h1>CNC Torna G-Code Üretici</h1>
-        <p>Teknik Resim / PDF → Otomatik G-Code • torna.knowledge-arena.xyz</p>
+        <p>Teknik Resimden G-Code — torna.knowledge-arena.xyz</p>
       </div>
     </div>
     <div class="badges">
-      <span class="badge b-blue">Fanuc 0i/21i</span>
+      <span class="badge b-blue">Fanuc 0i / 21i</span>
       <span class="badge b-green">Siemens 840D</span>
     </div>
   </header>
 
-  <!-- GRID -->
   <div class="grid">
 
-    <!-- ═══ LEFT ═══ -->
+    <!-- ══ LEFT: SETUP ══ -->
     <div style="display:flex;flex-direction:column;gap:14px">
 
-      <!-- Upload -->
+      <!-- PDF / Image upload -->
       <div class="panel">
         <div class="ph"><div class="ph-icon ic-blue">📐</div>
-          <div><div class="pt">Teknik Resim / PDF Yükle</div><div class="ps">PNG, JPG, PDF desteklenir</div></div>
+          <div><div class="pt">Teknik Resim / PDF</div><div class="ps">Referans olarak görüntüle</div></div>
         </div>
         <div class="pb">
-          <div class="upload" id="uploadZone" onclick="document.getElementById('fileInput').click()"
+          <div class="upload" id="uploadZone"
+            onclick="document.getElementById('fileInput').click()"
             ondragover="event.preventDefault();this.classList.add('drag')"
             ondragleave="this.classList.remove('drag')"
             ondrop="event.preventDefault();this.classList.remove('drag');handleFile(event.dataTransfer.files[0])">
             <input type="file" id="fileInput" accept="image/*,.pdf" onchange="handleFile(this.files[0])">
             <div id="uploadContent">
               <div class="upload-icon">🖼️</div>
-              <div class="upload-title">Teknik Resim veya PDF Yükle</div>
+              <div class="upload-title">Teknik Resim veya PDF</div>
               <div class="upload-sub">tıkla veya sürükle bırak</div>
             </div>
-            <img id="upload-preview" alt="Önizleme">
-            <div class="progress" id="pdfProgress"><div class="progress-bar" id="pdfBar"></div></div>
+            <img id="preview-img" alt="Teknik Resim">
+            <div class="progress" id="pdfProg"><div class="progress-bar" id="pdfBar"></div></div>
             <div class="pdf-info" id="pdfInfo"></div>
-          </div>
-          <div class="alert alert-info" style="margin-top:10px;margin-bottom:0">
-            <span>ℹ️</span><span>PDF'nin ilk sayfası önizleme olarak gösterilir. Koordinatları tablodan manuel girin.</span>
           </div>
         </div>
       </div>
@@ -183,115 +202,143 @@
       <!-- Material & Machine -->
       <div class="panel">
         <div class="ph"><div class="ph-icon ic-orange">⚙️</div>
-          <div><div class="pt">Malzeme & Tezgah</div><div class="ps">İş parçası ve kesme parametreleri</div></div>
+          <div><div class="pt">Malzeme & Tezgah</div></div>
         </div>
         <div class="pb">
-          <div class="fg"><label>Malzeme Tipi</label>
-            <select id="material" onchange="applyMatParams()">
+          <div class="fg"><label>Malzeme</label>
+            <select id="material" onchange="applyMat()">
               <option value="steel_mild">Yumuşak Çelik (C45)</option>
               <option value="steel_hard">Sert Çelik (42CrMo4)</option>
-              <option value="stainless">Paslanmaz Çelik (304)</option>
+              <option value="stainless">Paslanmaz (304)</option>
               <option value="aluminum">Alüminyum (6061)</option>
               <option value="brass">Pirinç</option>
               <option value="cast_iron">Dökme Demir</option>
               <option value="plastic">Plastik / Delrin</option>
             </select></div>
           <div class="fr">
-            <div class="fg"><label>Ham Çap (mm)</label><input type="number" id="stockD" value="60" min="1" max="500" step="0.1" onchange="drawCanvas()"></div>
-            <div class="fg"><label>Ham Uzunluk (mm)</label><input type="number" id="stockL" value="120" min="1" max="2000" step="0.1" onchange="drawCanvas()"></div>
+            <div class="fg"><label>Hammadde Çapı (mm)</label>
+              <input type="number" id="stockD" value="60" min="1" max="500" step="0.5" oninput="redraw()"></div>
+            <div class="fg"><label>Hammadde Boyu (mm)</label>
+              <input type="number" id="stockL" value="120" min="1" max="2000" step="0.5" oninput="updateStepZValues();redraw()"></div>
           </div>
           <div class="sec">Kesme Parametreleri</div>
           <div class="fr">
-            <div class="fg"><label>Vc — Kesme Hızı (m/dak)</label><input type="number" id="vc" value="200" min="10" max="1000"></div>
-            <div class="fg"><label>f — İlerleme (mm/dev)</label><input type="number" id="feed" value="0.2" step="0.01" min="0.01" max="2"></div>
+            <div class="fg"><label>Vc (m/dak)</label>
+              <input type="number" id="vc" value="200" min="10" max="1000"></div>
+            <div class="fg"><label>f (mm/dev)</label>
+              <input type="number" id="feed" value="0.2" step="0.01" min="0.01" max="2"></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>ap — Paso Derinliği (mm)</label><input type="number" id="ap" value="2.0" step="0.1" min="0.1" max="10"></div>
-            <div class="fg"><label>Son İşlem Payı (mm)</label><input type="number" id="fa" value="0.3" step="0.05" min="0" max="2"></div>
+            <div class="fg"><label>ap — Paso (mm)</label>
+              <input type="number" id="ap" value="2" step="0.1" min="0.1" max="10"></div>
+            <div class="fg"><label>Son Pay (mm)</label>
+              <input type="number" id="fa" value="0.3" step="0.05" min="0" max="2"></div>
           </div>
-          <div class="sec">CNC Kontrolcü</div>
+          <div class="sec">Kontrolcü</div>
           <div class="fr">
             <div class="fg"><label>Kontrolcü</label>
               <select id="ctrl">
                 <option value="fanuc">Fanuc 0i / 21i</option>
-                <option value="siemens">Siemens 840D sl</option>
+                <option value="siemens">Siemens 840D</option>
                 <option value="haas">Haas NGC</option>
               </select></div>
             <div class="fg"><label>Soğutma</label>
               <select id="coolant">
-                <option value="M08">Su Bazlı (M08)</option>
+                <option value="M08">Su (M08)</option>
                 <option value="M07">Sis (M07)</option>
-                <option value="M09">Soğutmasız (M09)</option>
+                <option value="M09">Yok (M09)</option>
               </select></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>Güvenli Z (mm)</label><input type="number" id="safeZ" value="5" step="0.5" min="1" max="50"></div>
-            <div class="fg"><label>Program No</label><input type="text" id="progNum" value="O1001"></div>
+            <div class="fg"><label>Güvenli Z (mm)</label>
+              <input type="number" id="safeZ" value="5" step="0.5" min="1"></div>
+            <div class="fg"><label>Program No</label>
+              <input type="text" id="progNum" value="O1001"></div>
           </div>
         </div>
       </div>
 
-      <!-- Ops -->
+      <!-- Operations -->
       <div class="panel">
         <div class="ph"><div class="ph-icon ic-green">🔧</div>
-          <div><div class="pt">Torna Operasyonları</div><div class="ps">Dahil edilecekleri seçin</div></div>
+          <div><div class="pt">Operasyonlar</div><div class="ps">Dahil edilecekleri seçin</div></div>
         </div>
         <div class="pb" id="opsList"></div>
       </div>
     </div>
 
-    <!-- ═══ CENTER ═══ -->
+    <!-- ══ CENTER: STEPS + CANVAS ══ -->
     <div style="display:flex;flex-direction:column;gap:14px">
 
-      <!-- Canvas -->
-      <div class="canvas-wrap">
-        <div class="ctb">
-          <div class="ctb-title">📊 Profil Düzenleyici & 2D Simülasyon</div>
-          <div class="coord-disp" id="coordDisp">X: 0.00   Z: 0.00</div>
-          <button class="btn btn-outline btn-sm" onclick="clearProfile()">🗑️ Temizle</button>
-          <button class="btn btn-outline btn-sm" onclick="undoLast()">↩️ Geri</button>
-          <button class="btn btn-outline btn-sm" onclick="loadExample()">📁 Örnek</button>
-          <button class="btn btn-outline btn-sm" onclick="runSim()">▶️ Sim</button>
+      <!-- Z Axis explanation -->
+      <div class="z-info">
+        <div class="z-info-title">📏 Koordinat Sistemi — Otomatik</div>
+        <div class="z-info-row">
+          <span class="z-chip z-0">Z : 0</span>
+          <span style="font-size:11px">= Parçanın <strong>sağ yüzü</strong> (referans / datum)</span>
         </div>
-        <canvas id="canvas" width="800" height="400"
-          onmousemove="canvasMove(event)" onclick="canvasClick(event)"></canvas>
-        <div class="cinfo">
-          <span><span class="dot" style="background:#3b82f6"></span>Kontur</span>
-          <span><span class="dot" style="background:#10b981"></span>Ham Malzeme</span>
-          <span><span class="dot" style="background:#ef4444"></span>Son Form</span>
-          <span style="margin-left:auto" id="ptCount">📍 0 nokta</span>
+        <div class="z-info-row">
+          <span class="z-chip z-neg">Z : –(uzunluk)</span>
+          <span style="font-size:11px">= Sola doğru, hammadde boyuna göre otomatik</span>
         </div>
+        <p>Aşağıdaki tabloya sadece <strong>çap</strong> ve <strong>bu adımın uzunluğunu</strong> gir. Z değerleri otomatik hesaplanır.</p>
       </div>
 
-      <!-- Profile table -->
+      <!-- Step Input Table -->
       <div class="panel">
-        <div class="ph"><div class="ph-icon ic-blue">📋</div>
-          <div><div class="pt">Kontur Koordinatları</div><div class="ps">X = çap, Z = eksen uzunluğu (mm)</div></div>
+        <div class="ph">
+          <div class="ph-icon ic-cyan">🧩</div>
+          <div><div class="pt">Parça Adımları (Kademeler)</div>
+            <div class="ps">Sağdan sola, her silindirik adımı girin</div>
+          </div>
           <div style="margin-left:auto;display:flex;gap:6px">
-            <button class="btn btn-outline btn-sm" onclick="addRow()">+ Nokta Ekle</button>
-            <button class="btn btn-outline btn-sm" onclick="sortByZ()">⇅ Z Sırala</button>
+            <button class="btn btn-outline btn-sm" onclick="addStep()">+ Adım Ekle</button>
+            <button class="btn btn-outline btn-sm" onclick="loadExample()">📁 Örnek</button>
           </div>
         </div>
         <div class="pb" style="padding:10px">
-          <div class="tbl-wrap">
-            <table>
-              <thead><tr><th>#</th><th>X Çap</th><th>Z Uzunluk</th><th>Hareket Tipi</th><th>Pah / R</th><th></th></tr></thead>
-              <tbody id="profileRows"></tbody>
-            </table>
+          <!-- Table header -->
+          <div class="step-header">
+            <div>#</div>
+            <div>Çap (mm)</div>
+            <div>Uzunluk (mm)</div>
+            <div>Özellik</div>
+            <div style="color:var(--cyan);text-align:right">Z (otomatik)</div>
+            <div></div>
           </div>
-          <p id="emptyMsg" style="font-size:11px;color:var(--t3);text-align:center;padding:10px 0">
-            Canvas'a tıklayarak nokta ekleyin veya "📁 Örnek" butonunu kullanın
+          <!-- Rows injected here -->
+          <div id="stepRows"></div>
+
+          <p id="emptyMsg" style="font-size:11px;color:var(--t3);text-align:center;padding:14px 0">
+            "📁 Örnek" ile başlayın veya "+ Adım Ekle" butonunu kullanın
           </p>
+
+          <!-- Totals -->
+          <div id="totalRow" style="display:none;margin-top:8px;padding:8px 10px;background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.2);border-radius:8px;display:none;font-size:11px;color:var(--cyan);font-family:'JetBrains Mono',monospace"></div>
+        </div>
+      </div>
+
+      <!-- 2D Canvas Preview -->
+      <div class="canvas-wrap">
+        <div class="ctb">
+          <div class="ctb-title">📊 Kesit Önizleme (Otomatik)</div>
+          <span style="font-size:10px;color:var(--t3)">Adımlar değişince otomatik güncellenir</span>
+        </div>
+        <canvas id="canvas" width="800" height="340"></canvas>
+        <div class="cinfo">
+          <span><span class="dot" style="background:#10b981"></span>Hammadde</span>
+          <span><span class="dot" style="background:#ef4444"></span>Son Form</span>
+          <span><span class="dot" style="background:#3b82f6"></span>Adım Sınırları</span>
+          <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--cyan)" id="partSummary"></span>
         </div>
       </div>
     </div>
 
-    <!-- ═══ RIGHT ═══ -->
+    <!-- ══ RIGHT: OUTPUT ══ -->
     <div style="display:flex;flex-direction:column;gap:14px">
 
       <button class="btn-gen" onclick="generateGCode()">⚡ G-CODE ÜRET</button>
 
-      <!-- Stats -->
       <div class="stats">
         <div class="stat"><div class="sv" id="sLines">0</div><div class="sl">Satır</div></div>
         <div class="stat"><div class="sv" id="sTime">0</div><div class="sl">Dk (est.)</div></div>
@@ -299,318 +346,377 @@
         <div class="stat"><div class="sv" id="sTools">0</div><div class="sl">Takım</div></div>
       </div>
 
-      <!-- G-Code output -->
       <div class="panel" style="flex:1">
         <div class="ph"><div class="ph-icon ic-green">💾</div>
-          <div><div class="pt">G-Code Çıktısı</div><div class="ps">Fanuc / Siemens uyumlu .nc</div></div>
+          <div><div class="pt">G-Code Çıktısı</div><div class="ps">.nc formatı</div></div>
           <div style="margin-left:auto;display:flex;gap:6px">
             <button class="btn btn-outline btn-sm" id="copyBtn" onclick="copyGCode()">📋 Kopyala</button>
-            <button class="btn btn-success btn-sm" onclick="downloadGCode()">⬇️ İndir</button>
+            <button class="btn btn-success btn-sm" onclick="downloadGCode()">⬇️ İndir .nc</button>
           </div>
         </div>
         <div class="pb" style="padding:10px">
           <div class="gc-out" id="gcOut">
 <span class="gc-comment">; ─────────────────────────────────────────────────</span>
 <span class="gc-comment">; CNC Torna G-Code Üretici</span>
-<span class="gc-comment">; torna.knowledge-arena.xyz</span>
+<span class="gc-comment">; Z:0 = Parçanın sağ yüzü (datum)</span>
+<span class="gc-comment">; Z negatif = sola doğru</span>
 <span class="gc-comment">;</span>
-<span class="gc-comment">; 1. Teknik resim veya PDF yükleyin</span>
-<span class="gc-comment">; 2. Kontur koordinatlarını girin</span>
+<span class="gc-comment">; 1. Hammadde boyunu girin</span>
+<span class="gc-comment">; 2. Parça adımlarını tablodan girin</span>
 <span class="gc-comment">; 3. Operasyonları seçin</span>
 <span class="gc-comment">; 4. ⚡ G-CODE ÜRET butonuna basın</span>
-<span class="gc-comment">;</span>
-<span class="gc-comment">; Desteklenen döngüler:</span>
-<span class="gc-comment">;   G72 G71 G70 G83 G75 G76 G01</span>
 <span class="gc-comment">; ─────────────────────────────────────────────────</span>
           </div>
         </div>
       </div>
 
-      <!-- Tool list -->
       <div class="panel">
         <div class="ph"><div class="ph-icon ic-purple">🔩</div>
-          <div><div class="pt">Takım Listesi (Tool List)</div></div>
+          <div><div class="pt">Takım Listesi</div></div>
         </div>
         <div class="pb" style="padding:10px" id="toolList">
-          <p style="font-size:11px;color:var(--t3);text-align:center;padding:10px 0">G-Code üretilince takımlar görünür</p>
+          <p style="font-size:11px;color:var(--t3);text-align:center;padding:8px 0">G-Code üretilince görünür</p>
         </div>
       </div>
-
     </div>
+
   </div>
 </div>
 
 <script>
-// ─── OPERATIONS ──────────────────────────────────────────────────────────────
-const OPS = [
-  {id:'face',      name:'Yüz Tornalama',       desc:'Alın düzeltme (G72)',        gcode:'G72', on:true },
-  {id:'rough_od',  name:'Kaba Dış Tornalama',  desc:'Çevrim döngüsü (G71)',       gcode:'G71', on:true },
-  {id:'finish_od', name:'İnce Dış Tornalama',  desc:'Son paso (G70)',             gcode:'G70', on:true },
-  {id:'bore',      name:'İç Çap Tornalama',    desc:'Boring döngüsü (G71)',       gcode:'G71', on:false},
-  {id:'drill',     name:'Matkap Delme',         desc:'Kırıklı delme (G83)',        gcode:'G83', on:false},
-  {id:'groove',    name:'Kanal Açma',           desc:'Kanal döngüsü (G75)',        gcode:'G75', on:false},
-  {id:'thread',    name:'Diş Açma',             desc:'Metrik diş döngüsü (G76)',   gcode:'G76', on:false},
-  {id:'cutoff',    name:'Kesme / Koparma',      desc:'Parça koparma (G01)',        gcode:'G01', on:false},
-]
-
-const MAT = {
-  steel_mild: {vc:200,f:.20,ap:2.0}, steel_hard:{vc:130,f:.15,ap:1.5},
-  stainless:  {vc:120,f:.15,ap:1.5}, aluminum:  {vc:400,f:.30,ap:3.0},
-  brass:      {vc:300,f:.25,ap:2.5}, cast_iron: {vc:150,f:.20,ap:2.0},
-  plastic:    {vc:500,f:.30,ap:3.0},
+/* ─── MATERIAL PARAMS ──────────────────────────────────────────────────────── */
+const MAT={
+  steel_mild:{vc:200,f:.20,ap:2.0},steel_hard:{vc:130,f:.15,ap:1.5},
+  stainless:{vc:120,f:.15,ap:1.5},aluminum:{vc:400,f:.30,ap:3.0},
+  brass:{vc:300,f:.25,ap:2.5},cast_iron:{vc:150,f:.20,ap:2.0},plastic:{vc:500,f:.30,ap:3.0}
 }
-
-function applyMatParams(){
-  const p=MAT[document.getElementById('material').value]
-  if(!p)return
+function applyMat(){
+  const p=MAT[document.getElementById('material').value];if(!p)return
   document.getElementById('vc').value=p.vc
   document.getElementById('feed').value=p.f
   document.getElementById('ap').value=p.ap
 }
 
-// render ops
+/* ─── OPERATIONS ──────────────────────────────────────────────────────────── */
+const OPS=[
+  {id:'face',      name:'Yüz Tornalama',       desc:'Alın düzeltme — G72 / G01',   gcode:'G72', on:true},
+  {id:'rough_od',  name:'Kaba Dış Tornalama',  desc:'G71 çevrim döngüsü',           gcode:'G71', on:true},
+  {id:'finish_od', name:'İnce Dış Tornalama',  desc:'G70 son paso',                 gcode:'G70', on:true},
+  {id:'bore',      name:'İç Çap Tornalama',    desc:'G71 boring döngüsü',           gcode:'G71', on:false},
+  {id:'drill',     name:'Matkap Delme',         desc:'G83 kırıklı delme',            gcode:'G83', on:false},
+  {id:'groove',    name:'Kanal Açma',           desc:'G75 kanal döngüsü',            gcode:'G75', on:false},
+  {id:'thread',    name:'Diş Açma',             desc:'G76 metrik diş döngüsü',       gcode:'G76', on:false},
+  {id:'cutoff',    name:'Kesme / Koparma',      desc:'G01 parça koparma',            gcode:'G01', on:false},
+]
 function renderOps(){
   document.getElementById('opsList').innerHTML=OPS.map((op,i)=>`
     <div class="op-item${op.on?' sel':''}" onclick="toggleOp(${i})">
       <input type="checkbox" ${op.on?'checked':''} onclick="event.stopPropagation();toggleOp(${i})">
-      <div class="op-label"><div class="op-name">${op.name}</div><div class="op-desc">${op.desc}</div></div>
+      <div style="flex:1"><div class="op-name">${op.name}</div><div class="op-desc">${op.desc}</div></div>
       <span class="op-badge">${op.gcode}</span>
     </div>`).join('')
 }
 function toggleOp(i){OPS[i].on=!OPS[i].on;renderOps()}
 
-// ─── PROFILE STATE ────────────────────────────────────────────────────────────
-let profile = []
+/* ─── STEP DATA ────────────────────────────────────────────────────────────── */
+// Each step = { diam: mm, len: mm, feat: 'cylinder'|'chamfer_l'|'chamfer_r'|'radius_cv'|'radius_cc'|'taper', chamR: mm }
+let steps = []
 
-function addRow(x='',z='',move='G01',r=''){
-  const tbody=document.getElementById('profileRows')
-  const idx=tbody.rows.length
-  const tr=document.createElement('tr')
-  tr.innerHTML=`
-    <td style="color:var(--t3);padding-left:8px;font-size:10px">${idx+1}</td>
-    <td><input type="number" step="0.01" value="${x}" placeholder="0" oninput="syncProfile()"></td>
-    <td><input type="number" step="0.01" value="${z}" placeholder="0" oninput="syncProfile()"></td>
-    <td><select oninput="syncProfile()">
-      <option ${move==='G00'?'selected':''}>G00</option>
-      <option ${move==='G01'?'selected':''}>G01</option>
-      <option ${move==='G02'?'selected':''}>G02</option>
-      <option ${move==='G03'?'selected':''}>G03</option>
-    </select></td>
-    <td><input type="number" step="0.01" value="${r}" placeholder="0" oninput="syncProfile()"></td>
-    <td><button class="del-btn" onclick="this.closest('tr').remove();renum();syncProfile()">✕</button></td>`
-  tbody.appendChild(tr)
-  renum(); syncProfile()
+function addStep(diam='', len='', feat='cylinder', chamR=''){
+  const id = Date.now() + Math.random()
+  steps.push({id, diam:parseFloat(diam)||0, len:parseFloat(len)||0, feat, chamR:parseFloat(chamR)||0})
+  renderSteps()
 }
 
-function renum(){
-  const rows=document.getElementById('profileRows').rows
-  for(let i=0;i<rows.length;i++) rows[i].cells[0].textContent=i+1
+function removeStep(id){
+  steps = steps.filter(s=>s.id!==id)
+  renderSteps()
 }
 
-function syncProfile(){
-  profile=[]
-  for(const row of document.getElementById('profileRows').rows){
-    const inputs=row.querySelectorAll('input')
-    const sel=row.querySelector('select')
-    profile.push({
-      x:parseFloat(inputs[0].value)||0,
-      z:parseFloat(inputs[1].value)||0,
-      move:sel.value,
-      r:parseFloat(inputs[2].value)||0
-    })
-  }
-  document.getElementById('emptyMsg').style.display=profile.length?'none':'block'
-  document.getElementById('ptCount').textContent=`📍 ${profile.length} nokta`
-  drawCanvas()
+function updateStep(id, field, val){
+  const s = steps.find(s=>s.id===id)
+  if(!s) return
+  if(field==='diam'||field==='len'||field==='chamR') s[field]=parseFloat(val)||0
+  else s[field]=val
+  renderSteps()
 }
 
-function clearProfile(){document.getElementById('profileRows').innerHTML='';profile=[];syncProfile()}
-function undoLast(){
-  const t=document.getElementById('profileRows')
-  if(t.rows.length>0){t.deleteRow(t.rows.length-1);renum();syncProfile()}
-}
-function sortByZ(){
-  const rows=Array.from(document.getElementById('profileRows').rows)
-  rows.sort((a,b)=>parseFloat(a.cells[2].querySelector('input').value)-parseFloat(b.cells[2].querySelector('input').value))
-  const tbody=document.getElementById('profileRows')
-  rows.forEach(r=>tbody.appendChild(r))
-  renum();syncProfile()
-}
-
-const EXAMPLE=[
-  [0,0,'G00',0],[30,0,'G01',0],[30,-20,'G01',2],[40,-20,'G01',0],
-  [40,-50,'G01',0],[50,-50,'G02',5],[50,-90,'G01',0],[60,-90,'G01',0],[60,-110,'G01',0]
-]
-function loadExample(){
-  clearProfile()
-  EXAMPLE.forEach(([x,z,m,r])=>addRow(x,z,m,r))
-  document.getElementById('stockD').value=65
-  document.getElementById('stockL').value=115
-  syncProfile()
-}
-
-// ─── CANVAS ───────────────────────────────────────────────────────────────────
-const CVS=document.getElementById('canvas')
-const CTX=CVS.getContext('2d')
-const SC=3.2,OX=65
-
-function oy(){return CVS.height/2+30}
-function toCvs(x,z){return{cx:OX+(-z)*SC,cy:oy()-(x/2)*SC}}
-function fromCvs(cx,cy){return{x:((oy()-cy)/SC)*2,z:-(cx-OX)/SC}}
-
-function drawCanvas(){
-  const W=CVS.width,H=CVS.height,oy_=oy()
-  CTX.clearRect(0,0,W,H)
-  CTX.fillStyle='#060c1a';CTX.fillRect(0,0,W,H)
-
-  // grid
-  CTX.strokeStyle='rgba(30,45,79,.6)';CTX.lineWidth=.5
-  const gs=10*SC
-  for(let x=OX%gs;x<W;x+=gs){CTX.beginPath();CTX.moveTo(x,0);CTX.lineTo(x,H);CTX.stroke()}
-  for(let y=oy_%gs;y<H;y+=gs){CTX.beginPath();CTX.moveTo(0,y);CTX.lineTo(W,y);CTX.stroke()}
-
-  // axes
-  CTX.strokeStyle='rgba(71,85,105,.7)';CTX.lineWidth=1
-  CTX.beginPath();CTX.moveTo(OX,0);CTX.lineTo(OX,H);CTX.stroke()
-  CTX.beginPath();CTX.moveTo(0,oy_);CTX.lineTo(W,oy_);CTX.stroke()
-  CTX.fillStyle='#374151';CTX.font='10px Inter'
-  CTX.fillText('Z→',W-22,oy_-5);CTX.fillText('X↑',OX+4,14)
-
-  // ticks
-  CTX.fillStyle='#2d3748';CTX.font='8px JetBrains Mono'
-  for(let mm=0;mm<=200;mm+=20){
-    const cx=OX+mm*SC
-    CTX.fillText(`-${mm}`,cx-8,oy_+12)
-    CTX.beginPath();CTX.strokeStyle='rgba(71,85,105,.4)'
-    CTX.moveTo(cx,oy_-3);CTX.lineTo(cx,oy_+3);CTX.stroke()
-  }
-  for(let mm=0;mm<=120;mm+=10){
-    CTX.fillStyle='#2d3748'
-    CTX.fillText(`${mm*2}`,OX-28,oy_-mm*SC/2+3)
-  }
-
-  // stock
-  const sd=parseFloat(document.getElementById('stockD').value)||60
-  const sl=parseFloat(document.getElementById('stockL').value)||120
-  const sw=sl*SC,sh=(sd/2)*SC
-  CTX.fillStyle='rgba(16,185,129,.05)';CTX.strokeStyle='rgba(16,185,129,.25)'
-  CTX.lineWidth=1.5;CTX.setLineDash([4,4])
-  CTX.fillRect(OX,oy_-sh,sw,sh)
-  CTX.strokeRect(OX,oy_-sh,sw,sh)
-  CTX.setLineDash([])
-
-  if(profile.length<2) return
-
-  // top profile
-  CTX.strokeStyle='#ef4444';CTX.lineWidth=2.5;CTX.shadowColor='#ef4444';CTX.shadowBlur=5
-  CTX.beginPath()
-  profile.forEach((p,i)=>{const{cx,cy}=toCvs(p.x,p.z);i?CTX.lineTo(cx,cy):CTX.moveTo(cx,cy)})
-  CTX.stroke()
-
-  // fill
-  CTX.beginPath()
-  const fp=toCvs(profile[0].x,profile[0].z)
-  CTX.moveTo(fp.cx,oy_)
-  profile.forEach(p=>{const{cx,cy}=toCvs(p.x,p.z);CTX.lineTo(cx,cy)})
-  const lp=toCvs(profile[profile.length-1].x,profile[profile.length-1].z)
-  CTX.lineTo(lp.cx,oy_);CTX.closePath()
-  CTX.fillStyle='rgba(239,68,68,.06)';CTX.fill()
-
-  // mirror bottom
-  CTX.shadowBlur=0;CTX.strokeStyle='rgba(239,68,68,.28)';CTX.lineWidth=1.2
-  CTX.beginPath()
-  profile.forEach((p,i)=>{const{cx,cy}=toCvs(p.x,p.z);const my=oy_+(oy_-cy);i?CTX.lineTo(cx,my):CTX.moveTo(cx,my)})
-  CTX.stroke()
-
-  // points
-  profile.forEach((p,i)=>{
-    const{cx,cy}=toCvs(p.x,p.z)
-    CTX.beginPath();CTX.arc(cx,cy,4,0,Math.PI*2)
-    CTX.fillStyle=i===0?'#10b981':'#3b82f6'
-    CTX.shadowColor=i===0?'#10b981':'#3b82f6';CTX.shadowBlur=7
-    CTX.fill();CTX.shadowBlur=0
-    CTX.fillStyle='#94a3b8';CTX.font='8px JetBrains Mono'
-    CTX.fillText(`P${i+1}`,cx+5,cy-5)
+/* Z position: rightmost step starts at Z=0, each step adds negatively */
+function calcZPositions(){
+  // Steps are ordered right→left
+  // Z start of step i = -(sum of lengths of steps 0..i-1)
+  let cumZ = 0
+  return steps.map(s=>{
+    const zStart = -cumZ          // right face of this step
+    const zEnd   = -(cumZ + s.len) // left face of this step
+    cumZ += s.len
+    return {zStart, zEnd}
   })
 }
 
-function canvasMove(e){
-  const r=CVS.getBoundingClientRect()
-  const sx=CVS.width/r.width,sy=CVS.height/r.height
-  const{x,z}=fromCvs((e.clientX-r.left)*sx,(e.clientY-r.top)*sy)
-  document.getElementById('coordDisp').textContent=
-    `X:${x.toFixed(2).padStart(7)}  Z:${z.toFixed(2).padStart(8)}`
+function renderSteps(){
+  const zPos = calcZPositions()
+  const container = document.getElementById('stepRows')
+  document.getElementById('emptyMsg').style.display = steps.length ? 'none' : 'block'
+
+  container.innerHTML = steps.map((s, i) => {
+    const zE = zPos[i] ? zPos[i].zEnd : 0
+    const zS = zPos[i] ? zPos[i].zStart : 0
+    return `
+    <div class="step-row" id="row-${s.id}">
+      <div class="step-num">${i+1}</div>
+      <div><input type="number" step="0.01" value="${s.diam||''}" placeholder="30.00"
+        oninput="updateStep('${s.id}','diam',this.value)"></div>
+      <div><input type="number" step="0.01" value="${s.len||''}" placeholder="20.00"
+        oninput="updateStep('${s.id}','len',this.value)"></div>
+      <div>
+        <select onchange="updateStep('${s.id}','feat',this.value)">
+          <option value="cylinder" ${s.feat==='cylinder'?'selected':''}>Silindir</option>
+          <option value="chamfer"  ${s.feat==='chamfer'?'selected':''}>Pah (C)</option>
+          <option value="radius"   ${s.feat==='radius'?'selected':''}>Radyüs (R)</option>
+          <option value="taper"    ${s.feat==='taper'?'selected':''}>Konik</option>
+        </select>
+      </div>
+      <div class="z-val">${zS===0?'<span style="color:#6ee7b7">Z: 0</span>':''} → ${zE.toFixed(2)}</div>
+      <div><button class="del-btn" onclick="removeStep('${s.id}')">✕</button></div>
+    </div>`
+  }).join('')
+
+  // Total row
+  const totalLen = steps.reduce((a,s)=>a+s.len,0)
+  const stockL   = parseFloat(document.getElementById('stockL').value)||120
+  const tr = document.getElementById('totalRow')
+  if(steps.length){
+    tr.style.display='block'
+    const diff = stockL - totalLen
+    tr.innerHTML = `Toplam parça boyu: <strong>${totalLen.toFixed(2)} mm</strong> | Z son nokta: <strong>Z:${(-totalLen).toFixed(2)}</strong>
+      ${diff<0?`<span style="color:var(--red)"> ⚠ Hammadde boyunu (${stockL}mm) aşıyor!</span>`:
+               diff>0?`<span style="color:var(--amber)"> (${diff.toFixed(1)}mm chuck payı)</span>`:''}`
+  } else { tr.style.display='none' }
+
+  redraw()
+  updateStepZValues()
 }
 
-function canvasClick(e){
-  const r=CVS.getBoundingClientRect()
-  const sx=CVS.width/r.width,sy=CVS.height/r.height
-  const{x,z}=fromCvs((e.clientX-r.left)*sx,(e.clientY-r.top)*sy)
-  if(x<0||z>0)return
-  addRow(+x.toFixed(2),+z.toFixed(2),'G01',0)
+function updateStepZValues(){ renderSteps && redraw() }
+
+function loadExample(){
+  steps = []
+  // Example: stepped shaft — from right to left
+  // Right face = Z:0
+  const ex=[
+    {diam:30, len:20,  feat:'cylinder', chamR:2},
+    {diam:40, len:30,  feat:'cylinder', chamR:0},
+    {diam:50, len:40,  feat:'radius',   chamR:5},
+    {diam:50, len:20,  feat:'cylinder', chamR:0},
+  ]
+  ex.forEach(e=>{
+    const id=Date.now()+Math.random()
+    steps.push({id, ...e})
+  })
+  document.getElementById('stockD').value=65
+  document.getElementById('stockL').value=120
+  renderSteps()
 }
 
-let simT=null
-function runSim(){
-  if(!profile.length)return
-  if(simT){clearInterval(simT);simT=null;drawCanvas();return}
-  drawCanvas();let i=0
-  simT=setInterval(()=>{
-    if(i>=profile.length){clearInterval(simT);simT=null;return}
-    const{cx,cy}=toCvs(profile[i].x,profile[i].z)
-    CTX.beginPath();CTX.arc(cx,cy,7,0,Math.PI*2)
-    CTX.fillStyle='#f59e0b';CTX.shadowColor='#f59e0b';CTX.shadowBlur=14
-    CTX.fill();CTX.shadowBlur=0;i++
-  },350)
+/* ─── CANVAS ────────────────────────────────────────────────────────────────── */
+const CVS=document.getElementById('canvas')
+const CTX=CVS.getContext('2d')
+
+function redraw(){
+  const W=CVS.width, H=CVS.height
+  CTX.clearRect(0,0,W,H)
+  CTX.fillStyle='#060c1a'; CTX.fillRect(0,0,W,H)
+
+  const stockD = parseFloat(document.getElementById('stockD').value)||60
+  const stockL = parseFloat(document.getElementById('stockL').value)||120
+
+  // Scale to fit
+  const pad = 60
+  const scX = (W - pad*2) / stockL     // px per mm along Z
+  const scY = (H/2 - 30) / (stockD/2)  // px per mm radius
+  const ox = pad            // canvas X = 0 → left of stock (Z=-stockL in world)
+  const oy = H/2 + 10       // centerline
+
+  // Grid
+  CTX.strokeStyle='rgba(30,45,79,.5)'; CTX.lineWidth=.5
+  const gMM = stockL<=100?10 : stockL<=300?20 : 50
+  for(let mm=0;mm<=stockL;mm+=gMM){
+    const cx=ox+mm*scX
+    CTX.beginPath(); CTX.moveTo(cx,0); CTX.lineTo(cx,H); CTX.stroke()
+  }
+
+  // Centerline
+  CTX.strokeStyle='rgba(71,85,105,.5)'; CTX.lineWidth=1; CTX.setLineDash([5,4])
+  CTX.beginPath(); CTX.moveTo(0,oy); CTX.lineTo(W,oy); CTX.stroke()
+  CTX.setLineDash([])
+
+  // Axis labels
+  CTX.fillStyle='#374151'; CTX.font='9px Inter'
+  CTX.fillText('Z:0',ox-8,oy-8)
+  CTX.fillText(`Z:-${stockL}`,ox+stockL*scX-28,oy-8)
+  CTX.fillText('← Sola',W-60,oy-8)
+
+  // Stock (hammadde)
+  const sh = (stockD/2)*scY
+  CTX.fillStyle='rgba(16,185,129,.05)'; CTX.strokeStyle='rgba(16,185,129,.22)'
+  CTX.lineWidth=1.2; CTX.setLineDash([4,4])
+  CTX.fillRect(ox,oy-sh,stockL*scX,sh)
+  CTX.strokeRect(ox,oy-sh,stockL*scX,sh)
+  CTX.setLineDash([])
+
+  if(!steps.length){
+    CTX.fillStyle='#374151'; CTX.font='12px Inter'; CTX.textAlign='center'
+    CTX.fillText('Adım ekleyince önizleme burada görünür', W/2, H/2-10)
+    CTX.textAlign='left'
+    document.getElementById('partSummary').textContent=''
+    return
+  }
+
+  const zPos=calcZPositions()
+
+  // Build profile points from steps (right→left, so canvas left = Z=-stockL, right = Z=0)
+  // In canvas coords: X on canvas = ox + (stockL - |z|)*scX   → rightmost = ox+stockL*scX, leftmost=ox
+  // z is negative in world, |z| = 0..stockL
+
+  function zToCanvasX(z){ return ox + (stockL + z) * scX }  // z is negative world
+  function rToCanvasY(r){ return oy - r*scY }
+
+  // Draw part profile (top half, then mirror)
+  CTX.beginPath()
+  let first=true
+
+  // Start at right face, centerline
+  const rightCanvasX = zToCanvasX(0)
+  CTX.moveTo(rightCanvasX, oy)
+
+  // Right face up to first step diameter
+  if(steps.length > 0){
+    CTX.lineTo(rightCanvasX, rToCanvasY(steps[0].diam/2))
+  }
+
+  steps.forEach((s, i)=>{
+    const {zStart, zEnd} = zPos[i]
+    const cxStart = zToCanvasX(zStart)
+    const cxEnd   = zToCanvasX(zEnd)
+    const cyThis  = rToCanvasY(s.diam/2)
+
+    // Horizontal line (top face of this step)
+    CTX.lineTo(cxEnd, cyThis)
+
+    // Vertical transition to next step (or close)
+    if(i < steps.length-1){
+      const nextD = steps[i+1].diam
+      CTX.lineTo(cxEnd, rToCanvasY(nextD/2))
+    }
+  })
+
+  // Close at last step left face
+  const lastZEnd = zPos[steps.length-1]?.zEnd ?? 0
+  CTX.lineTo(zToCanvasX(lastZEnd), oy)
+  CTX.closePath()
+
+  // Fill part
+  CTX.fillStyle='rgba(239,68,68,.08)'; CTX.fill()
+
+  // Stroke part outline
+  CTX.strokeStyle='#ef4444'; CTX.lineWidth=2.5; CTX.shadowColor='#ef4444'; CTX.shadowBlur=5
+  CTX.stroke(); CTX.shadowBlur=0
+
+  // Mirror bottom
+  CTX.save(); CTX.scale(1,-1); CTX.translate(0,-2*oy)
+  CTX.strokeStyle='rgba(239,68,68,.3)'; CTX.lineWidth=1.2; CTX.shadowBlur=0
+  CTX.stroke()
+  CTX.restore()
+
+  // Step boundary lines + dimension labels
+  steps.forEach((s,i)=>{
+    const{zStart,zEnd}=zPos[i]
+    const cxStart=zToCanvasX(zStart)
+    const cxEnd=zToCanvasX(zEnd)
+    const cy=rToCanvasY(s.diam/2)
+
+    // Vertical boundary
+    CTX.strokeStyle='rgba(59,130,246,.4)'; CTX.lineWidth=1; CTX.setLineDash([3,3])
+    if(i>0){
+      CTX.beginPath(); CTX.moveTo(cxStart,oy+5); CTX.lineTo(cxStart,cy-5); CTX.stroke()
+    }
+    CTX.setLineDash([])
+
+    // Diameter label
+    const midX=(cxStart+cxEnd)/2
+    CTX.fillStyle='#e2e8f0'; CTX.font='bold 10px JetBrains Mono'; CTX.textAlign='center'
+    CTX.fillText(`Ø${s.diam}`, midX, cy-5)
+
+    // Length label below centerline
+    CTX.fillStyle='#3b82f6'; CTX.font='9px JetBrains Mono'
+    CTX.fillText(`${s.len}mm`, midX, oy+14)
+
+    // Z label at right face of step
+    if(i===0){
+      CTX.fillStyle='#6ee7b7'; CTX.font='9px JetBrains Mono'
+      CTX.fillText('Z:0', cxStart+3, oy+25)
+    }
+
+    // Z end label
+    CTX.fillStyle='#94a3b8'; CTX.font='8px JetBrains Mono'
+    CTX.fillText(`Z:${zEnd.toFixed(0)}`, cxEnd-4, oy+25)
+  })
+  CTX.textAlign='left'
+
+  // Summary
+  const totalL=steps.reduce((a,s)=>a+s.len,0)
+  const maxD=Math.max(...steps.map(s=>s.diam))
+  document.getElementById('partSummary').textContent=
+    `Ø${maxD}×${totalL.toFixed(0)}mm | Z:0 → Z:${(-totalL).toFixed(0)}`
 }
 
-// ─── FILE UPLOAD ─────────────────────────────────────────────────────────────
+/* ─── FILE UPLOAD ────────────────────────────────────────────────────────── */
 async function handleFile(file){
-  if(!file)return
+  if(!file) return
   if(file.type==='application/pdf') await parsePdf(file)
   else if(file.type.startsWith('image/')){
-    const url=URL.createObjectURL(file)
-    document.getElementById('upload-preview').src=url
-    document.getElementById('upload-preview').style.display='block'
+    document.getElementById('preview-img').src=URL.createObjectURL(file)
+    document.getElementById('preview-img').style.display='block'
     document.getElementById('uploadContent').style.display='none'
   }
 }
 
 async function parsePdf(file){
-  const prog=document.getElementById('pdfProgress')
+  const prog=document.getElementById('pdfProg')
   const bar=document.getElementById('pdfBar')
   const info=document.getElementById('pdfInfo')
-  prog.style.display='block';bar.style.width='10%';info.style.display='block'
-  info.textContent='PDF yükleniyor...'
+  prog.style.display='block'; bar.style.width='10%'
+  info.style.display='block'; info.textContent='PDF yükleniyor...'
   try{
     if(!window.pdfjsLib){
       await new Promise((res,rej)=>{
         const s=document.createElement('script')
         s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
-        s.onload=res;s.onerror=rej
-        document.head.appendChild(s)
+        s.onload=res; s.onerror=rej; document.head.appendChild(s)
       })
       window.pdfjsLib.GlobalWorkerOptions.workerSrc=
         'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
     }
-    bar.style.width='35%';info.textContent='PDF parse ediliyor...'
+    bar.style.width='40%'; info.textContent='Render ediliyor...'
     const ab=await file.arrayBuffer()
     const pdf=await window.pdfjsLib.getDocument({data:ab}).promise
-    bar.style.width='65%';info.textContent=`${pdf.numPages} sayfa bulundu`
     const page=await pdf.getPage(1)
-    const vp=page.getViewport({scale:1.5})
+    const vp=page.getViewport({scale:2.0})
     const tmp=document.createElement('canvas')
-    tmp.width=vp.width;tmp.height=vp.height
+    tmp.width=vp.width; tmp.height=vp.height
     await page.render({canvasContext:tmp.getContext('2d'),viewport:vp}).promise
-    document.getElementById('upload-preview').src=tmp.toDataURL()
-    document.getElementById('upload-preview').style.display='block'
+    document.getElementById('preview-img').src=tmp.toDataURL()
+    document.getElementById('preview-img').style.display='block'
     document.getElementById('uploadContent').style.display='none'
     bar.style.width='100%'
-    info.textContent=`✅ ${file.name} — Koordinatları tablodan girin`
-  }catch{info.textContent='⚠️ PDF okunamadı. PNG/JPG olarak kaydedin.'}
+    info.textContent=`✅ ${file.name} (${pdf.numPages} sayfa)`
+  } catch {
+    info.textContent='⚠️ PDF okunamadı — PNG olarak kaydedin'
+  }
 }
 
-// ─── G-CODE ──────────────────────────────────────────────────────────────────
+/* ─── G-CODE GENERATION ──────────────────────────────────────────────────── */
 let gcode=''
 
 function hl(line){
@@ -630,124 +736,225 @@ function hl(line){
   return c
 }
 
-function v(id){return document.getElementById(id).value}
-function vn(id){return parseFloat(v(id))||0}
+function vn(id){return parseFloat(document.getElementById(id).value)||0}
+function vv(id){return document.getElementById(id).value}
 
 function generateGCode(){
-  if(profile.length<2){alert('En az 2 kontur noktası girin!');return}
-  const vc_=vn('vc'),f=vn('feed'),ap_=vn('ap'),fa=vn('fa'),safeZ_=vn('safeZ')
-  const sd=vn('stockD'),sl=vn('stockL'),pn=v('progNum')||'O1001'
-  const coolant=v('coolant'),ctrl=v('ctrl')
+  if(steps.length<1){alert('En az 1 parça adımı girin!');return}
+
+  const vc_=vn('vc'), f=vn('feed'), ap_=vn('ap'), fa=vn('fa'), safeZ_=vn('safeZ')
+  const stockD=vn('stockD'), stockL=vn('stockL'), pn=vv('progNum')||'O1001'
+  const coolant=vv('coolant'), ctrl=vv('ctrl')
   const active=OPS.filter(o=>o.on)
-  const maxX=Math.max(...profile.map(p=>p.x))
-  const minX=Math.max(Math.min(...profile.filter(p=>p.x>0).map(p=>p.x)),10)
-  const rpmMax=Math.round(vc_*1000/(Math.PI*minX))
+  const zPos=calcZPositions()
+
+  // Build sorted profile for G71 (by Z, right to left)
+  // Profile: array of {X (diameter), Z}
+  // Start: Z=0.5 (approach), first step right face
+  const profile = []
+  profile.push({X: steps[0].diam, Z: 0})
+  steps.forEach((s,i)=>{
+    const {zEnd}=zPos[i]
+    // Add chamfer/radius before left-face transition
+    let ext=''
+    if(s.feat==='chamfer' && s.chamR>0) ext=`C${s.chamR.toFixed(2)}`
+    else if(s.feat==='radius' && s.chamR>0) ext=`R${s.chamR.toFixed(2)}`
+    profile.push({X: s.diam, Z: zEnd, ext})
+    // Vertical step to next diameter
+    if(i<steps.length-1){
+      profile.push({X: steps[i+1].diam, Z: zEnd})
+    }
+  })
+
+  const maxD=Math.max(...steps.map(s=>s.diam))
+  const minD=Math.max(Math.min(...steps.filter(s=>s.diam>0).map(s=>s.diam)),10)
+  const rpmMax=Math.round(vc_*1000/(Math.PI*minD))
   const now=new Date()
   const ds=now.toLocaleDateString('tr-TR')+' '+now.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})
   const matN=document.getElementById('material').options[document.getElementById('material').selectedIndex].text
+  const totalPartLen=steps.reduce((a,s)=>a+s.len,0)
 
-  const L=[]
-  const p=(...args)=>L.push(...args)
+  const L=[]; const p=(...a)=>L.push(...a)
 
   p(
-    `; ════════════════════════════════════════════════`,
-    `; PROGRAM : ${pn}`,`; Tarih   : ${ds}`,
-    `; Malzeme : ${matN}`,`; Ham     : Ø${sd} mm x ${sl} mm`,
-    `; Kesme   : Vc=${vc_} m/dak | f=${f} mm/dev | ap=${ap_} mm`,
-    `; Kontrolcü: ${ctrl.toUpperCase()}`,
-    `; ════════════════════════════════════════════════`,
+    `; ════════════════════════════════════════════════════`,
+    `; PROGRAM  : ${pn}`,
+    `; Tarih    : ${ds}`,
+    `; Malzeme  : ${matN}`,
+    `; Hammadde : Ø${stockD} mm x ${stockL} mm`,
+    `; Parça Boy: ${totalPartLen.toFixed(2)} mm`,
+    `; Koordinat: Z:0 = Sağ yüz (datum) | Z:${(-totalPartLen).toFixed(2)} = Sol yüz`,
+    `; Kesme    : Vc=${vc_} m/dak | f=${f} mm/dev | ap=${ap_} mm`,
+    `; ════════════════════════════════════════════════════`,
     ``,pn,
-    `G21 G18 G40 G80     ; Metrik, XZ düzlemi`,
-    `G50 S${rpmMax}          ; Maks dev/dak ${rpmMax}`,
-    `G96 S${vc_} M03       ; Sabit yüzey hızı ${vc_} m/dak`,``
+    `G21 G18 G40 G80        ; Metrik, XZ düzlemi, komut iptali`,
+    `G50 S${rpmMax}             ; Maksimum devir ${rpmMax} dev/dak`,
+    `G96 S${vc_} M03           ; Sabit yüzey hızı ${vc_} m/dak, mil saat yönü`,
+    ``
   )
 
-  let opN=0,tlN=0
+  let opN=0, tlN=0
 
+  // ── FACE ──
   if(active.find(o=>o.id==='face')){
-    opN++;tlN++
-    p(`; ─── OP${opN}: YÜZ TORNALAMA ─────────────────`,
-      `T0101 M06            ; T1 - Alın kalem CNMG`,`${coolant}`,
-      `G00 X${sd+5} Z${safeZ_}`,`G00 X${sd+2} Z0.5`,
-      `G01 X-1.0 F${(f*.8).toFixed(3)}`,`G00 Z${safeZ_}`,`G00 X${sd+5}`,``)
+    opN++; tlN++
+    p(
+      `; ─── OP${opN}: YÜZ TORNALAMA (Alın) ─────────────────────`,
+      `T0101 M06              ; Takım 1 — Alın kalemi (CNMG 120408)`,
+      `${coolant}                    ; Soğutma açık`,
+      `G00 X${(stockD+5).toFixed(1)} Z${safeZ_.toFixed(1)}   ; Güvenli konum`,
+      `G00 X${(stockD+2).toFixed(1)} Z0.5      ; Alın yaklaşma`,
+      `G01 X-1.0 F${(f*0.8).toFixed(3)}     ; Z:0 referans yüzey kesimi`,
+      `G00 Z${safeZ_.toFixed(1)}             ; Geri çekilme`,
+      `G00 X${(stockD+5).toFixed(1)}`,
+      ``
+    )
   }
+
+  // ── DRILL ──
   if(active.find(o=>o.id==='drill')){
-    opN++;tlN++
-    const dd=15,dep=Math.min(sl*.6,80).toFixed(1)
-    p(`; ─── OP${opN}: MATKAP DELME ───────────────────`,
-      `T0202 M06            ; T2 - Matkap Ø${dd}mm`,
-      `G97 S${Math.round(vc_*1000/(Math.PI*dd))} M03`,
-      `G00 X0 Z${safeZ_}`,`G83 X0 Z-${dep} Q3000 F${(f*.5).toFixed(3)}`,
-      `G80`,`G00 Z${safeZ_}`,`G96 S${vc_} M03`,``)
+    opN++; tlN++
+    const dd=15, dep=Math.min(totalPartLen*0.6,80).toFixed(1)
+    p(
+      `; ─── OP${opN}: MATKAP DELME ──────────────────────────────`,
+      `T0202 M06              ; Takım 2 — Matkap Ø${dd}mm`,
+      `G97 S${Math.round(vc_*1000/(Math.PI*dd))} M03      ; Sabit devir`,
+      `G00 X0 Z${safeZ_.toFixed(1)}`,
+      `G00 X0 Z2.0`,
+      `G83 X0 Z-${dep} Q3000 F${(f*0.5).toFixed(3)}  ; Kırıklı delme`,
+      `G80                    ; Delme döngüsü iptal`,
+      `G00 Z${safeZ_.toFixed(1)}`,
+      `G96 S${vc_} M03           ; Sabit yüzey hızına dön`,
+      ``
+    )
   }
+
+  // ── ROUGH OD (G71) ──
   if(active.find(o=>o.id==='rough_od')){
-    opN++;tlN++
-    p(`; ─── OP${opN}: KABA DIŞ TORNALAMA (G71) ────────`,
-      `T0303 M06            ; T3 - Dış kalem TNMG 160408`,`${coolant}`,
-      `G96 S${vc_} M03`,`G00 X${sd+5} Z${safeZ_}`,`G00 X${sd+2} Z1.0`,
-      `G71 U${ap_.toFixed(2)} R0.5`,
-      `G71 P100 Q200 U${fa.toFixed(3)} W${(fa/2).toFixed(3)} F${f.toFixed(3)}`,``)
-    p(`N100 G00 X${profile[0].x.toFixed(2)} Z1.0`)
-    profile.forEach((pt,i)=>{
-      let ext=''
-      if((pt.move==='G02'||pt.move==='G03')&&pt.r>0)ext=` R${pt.r.toFixed(2)}`
-      else if(pt.move==='G01'&&pt.r!==0)ext=` ${pt.r>0?'C':'R'}${Math.abs(pt.r).toFixed(2)}`
-      const ln=i<profile.length-1?`N${110+i*10} `:'N200 '
-      p(`${ln}${pt.move} X${pt.x.toFixed(2)} Z${pt.z.toFixed(2)}${ext} F${f.toFixed(3)}`)
+    opN++; tlN++
+    p(
+      `; ─── OP${opN}: KABA DIŞ TORNALAMA — G71 ─────────────────`,
+      `T0303 M06              ; Takım 3 — Dış tornalama kalemi (TNMG 160408)`,
+      `${coolant}`,
+      `G96 S${vc_} M03`,
+      `G00 X${(stockD+5).toFixed(1)} Z${safeZ_.toFixed(1)}`,
+      `G00 X${(stockD+2).toFixed(1)} Z1.0`,
+      `G71 U${ap_.toFixed(2)} R0.5          ; Paso=${ap_}mm, geri çekilme=0.5mm`,
+      `G71 P100 Q200 U${fa.toFixed(3)} W${(fa/2).toFixed(3)} F${f.toFixed(3)}`,
+      `                       ;   U=${fa.toFixed(3)}: X son işlem payı`,
+      `                       ;   W=${(fa/2).toFixed(3)}: Z son işlem payı`,
+      ``
+    )
+    // Profile blocks N100..N200
+    p(`N100 G00 X${profile[0].X.toFixed(2)} Z1.0   ; Profil başlangıcı (Z:0 yaklaşım)`)
+    profile.slice(1).forEach((pt, i)=>{
+      const isLast = i===profile.slice(1).length-1
+      const nNum = isLast ? 200 : 110+i*10
+      const ext = pt.ext ? ` ${pt.ext}` : ''
+      p(`N${nNum} G01 X${pt.X.toFixed(2)} Z${pt.Z.toFixed(2)}${ext} F${f.toFixed(3)}`)
     })
     p(``)
   }
+
+  // ── FINISH OD (G70) ──
   if(active.find(o=>o.id==='finish_od')){
     opN++
-    p(`; ─── OP${opN}: İNCE DIŞ TORNALAMA (G70) ────────`,
-      `G96 S${Math.round(vc_*1.2)} M03      ; İnce işlem`,
-      `G70 P100 Q200 F${(f*.6).toFixed(3)}`,`G00 X${sd+10} Z${safeZ_}`,``)
-  }
-  if(active.find(o=>o.id==='groove')){
-    opN++;tlN++
-    const gZ=(sl*.4).toFixed(1)
-    p(`; ─── OP${opN}: KANAL AÇMA (G75) ─────────────`,
-      `T0404 M06            ; T4 - Kanal kalemi 3mm`,
-      `G97 S${Math.round(vc_*1000/(Math.PI*maxX)*.7)} M03`,
-      `G00 X${maxX+5} Z${safeZ_}`,`G00 X${maxX+2} Z-${gZ}`,
-      `G75 R0.5`,`G75 X${(maxX-10).toFixed(1)} Z-${gZ} P2000 Q3000 F${(f*.5).toFixed(3)}`,
-      `G00 X${maxX+10}`,`G00 Z${safeZ_}`,``)
-  }
-  if(active.find(o=>o.id==='thread')){
-    opN++;tlN++
-    const pitch=1.5,tdep=(pitch*.6495)
-    p(`; ─── OP${opN}: DİŞ AÇMA (G76) ─────────────────`,
-      `T0505 M06            ; T5 - Diş kalemi 60°`,
-      `G97 S${Math.round(vc_*1000/(Math.PI*maxX)*.5)} M03`,
-      `G00 X${maxX+5} Z${safeZ_}`,`G00 X${maxX+2} Z4.0`,
-      `G76 P020060 Q100 R0.05`,
-      `G76 X${(maxX-tdep*2).toFixed(3)} Z-${Math.min(sl*.3,30).toFixed(1)} R0 P${Math.round(tdep*1000)} Q300 F${pitch.toFixed(3)}`,
-      `G00 X${maxX+10}`,`G00 Z${safeZ_}`,``)
-  }
-  if(active.find(o=>o.id==='bore')){
-    opN++;tlN++
-    const bd=20,bdep=Math.min(sl*.5,60).toFixed(1)
-    p(`; ─── OP${opN}: İÇ ÇAP TORNALAMA ────────────────`,
-      `T0606 M06            ; T6 - İç kalem CCMT`,
-      `G96 S${Math.round(vc_*.8)} M03`,`G00 X${bd-5} Z${safeZ_}`,
-      `G71 U${(ap_*.5).toFixed(2)} R0.3`,
-      `G71 P300 Q400 U-${fa.toFixed(2)} W${(fa/2).toFixed(2)} F${f.toFixed(3)}`,
-      `N300 G00 X${bd+2}`,`      G01 Z-${bdep} F${f.toFixed(3)}`,
-      `N400 G00 Z${safeZ_}`,`G70 P300 Q400 F${(f*.6).toFixed(3)}`,`G00 Z${safeZ_}`,``)
-  }
-  if(active.find(o=>o.id==='cutoff')){
-    opN++;tlN++
-    p(`; ─── OP${opN}: KESME / KOPARMA ──────────────`,
-      `T0707 M06            ; T7 - Kesme kalemi 3mm`,
-      `G97 S${Math.round(vc_*1000/(Math.PI*sd)*.6)} M03`,
-      `G00 X${sd+5} Z-${(sl-1).toFixed(1)}`,`G01 X-0.5 F${(f*.3).toFixed(3)}`,
-      `G00 X${sd+10}`,`G00 Z${safeZ_}`,``)
+    const finVc=Math.round(vc_*1.2), finF=(f*0.6).toFixed(3)
+    p(
+      `; ─── OP${opN}: İNCE DIŞ TORNALAMA — G70 ─────────────────`,
+      `G96 S${finVc} M03          ; İnce işlem: ${finVc} m/dak (daha hızlı)`,
+      `G70 P100 Q200 F${finF}     ; G71 profilini son pasoda işle`,
+      `G00 X${(stockD+10).toFixed(1)} Z${safeZ_.toFixed(1)}`,
+      ``
+    )
   }
 
-  p(`; ─── PROGRAM SONU ───────────────────────────────`,
-    `M09                  ; Soğutma kapat`,
-    `G00 X200.0 Z200.0    ; Güvenli konum`,
-    `M05                  ; Mil dur`,`M30                  ; Program sonu ve sar`,`%`)
+  // ── GROOVE ──
+  if(active.find(o=>o.id==='groove')){
+    opN++; tlN++
+    // Place groove at ~40% from right
+    const gZ=(totalPartLen*0.4).toFixed(1)
+    const gX=(maxD-10).toFixed(1)
+    p(
+      `; ─── OP${opN}: KANAL AÇMA — G75 ──────────────────────────`,
+      `T0404 M06              ; Takım 4 — Kanal kalemi 3mm`,
+      `G97 S${Math.round(vc_*1000/(Math.PI*maxD)*0.7)} M03`,
+      `G00 X${(maxD+5).toFixed(1)} Z${safeZ_.toFixed(1)}`,
+      `G00 X${(maxD+2).toFixed(1)} Z-${gZ}    ; Kanal konumu Z:-${gZ}`,
+      `G75 R0.5               ; Kırma miktarı`,
+      `G75 X${gX} Z-${gZ} P2000 Q3000 F${(f*0.5).toFixed(3)}`,
+      `G00 X${(maxD+10).toFixed(1)}`,
+      `G00 Z${safeZ_.toFixed(1)}`,
+      ``
+    )
+  }
+
+  // ── THREAD ──
+  if(active.find(o=>o.id==='thread')){
+    opN++; tlN++
+    const pitch=1.5, tdep=(pitch*0.6495)
+    const thrD=steps[0].diam  // thread on first (rightmost) step
+    const thrLen=Math.min(steps[0].len*0.9,30).toFixed(1)
+    p(
+      `; ─── OP${opN}: DİŞ AÇMA — G76 ────────────────────────────`,
+      `; Diş: M${thrD}x${pitch} (Metrik)`,
+      `T0505 M06              ; Takım 5 — Diş kalemi 60°`,
+      `G97 S${Math.round(vc_*1000/(Math.PI*thrD)*0.5)} M03`,
+      `G00 X${(thrD+5).toFixed(1)} Z${safeZ_.toFixed(1)}`,
+      `G00 X${(thrD+2).toFixed(1)} Z4.0`,
+      `G76 P020060 Q100 R0.05 ; Giriş=2, min.paso=0.1mm, açı=60°`,
+      `G76 X${(thrD-tdep*2).toFixed(3)} Z-${thrLen} R0 P${Math.round(tdep*1000)} Q300 F${pitch.toFixed(3)}`,
+      `                       ;   Diş derinliği=${tdep.toFixed(3)}mm, adım=${pitch}mm`,
+      `G00 X${(thrD+10).toFixed(1)}`,
+      `G00 Z${safeZ_.toFixed(1)}`,
+      ``
+    )
+  }
+
+  // ── BORE ──
+  if(active.find(o=>o.id==='bore')){
+    opN++; tlN++
+    const boreD=20, boreLen=Math.min(totalPartLen*0.5,60).toFixed(1)
+    p(
+      `; ─── OP${opN}: İÇ ÇAP TORNALAMA ──────────────────────────`,
+      `T0606 M06              ; Takım 6 — İç kalem (CCMT 060204)`,
+      `G96 S${Math.round(vc_*0.8)} M03`,
+      `G00 X${(boreD-5).toFixed(1)} Z${safeZ_.toFixed(1)}`,
+      `G71 U${(ap_*0.5).toFixed(2)} R0.3`,
+      `G71 P300 Q400 U-${fa.toFixed(2)} W${(fa/2).toFixed(2)} F${f.toFixed(3)}`,
+      `N300 G00 X${(boreD+2).toFixed(1)}         ; İç profil başlangıcı`,
+      `      G01 Z-${boreLen} F${f.toFixed(3)}`,
+      `N400 G00 Z${safeZ_.toFixed(1)}`,
+      `G70 P300 Q400 F${(f*0.6).toFixed(3)}`,
+      `G00 Z${safeZ_.toFixed(1)}`,
+      ``
+    )
+  }
+
+  // ── CUTOFF ──
+  if(active.find(o=>o.id==='cutoff')){
+    opN++; tlN++
+    const cutZ=(totalPartLen+0.5).toFixed(1)
+    p(
+      `; ─── OP${opN}: KESME / KOPARMA ────────────────────────────`,
+      `T0707 M06              ; Takım 7 — Kesme kalemi 3mm`,
+      `G97 S${Math.round(vc_*1000/(Math.PI*stockD)*0.6)} M03`,
+      `G00 X${(stockD+5).toFixed(1)} Z-${cutZ}  ; Z:-${cutZ} = Parça sol yüzü + 0.5mm pay`,
+      `G01 X-0.5 F${(f*0.3).toFixed(3)}       ; Yavaş koparma`,
+      `G00 X${(stockD+10).toFixed(1)}`,
+      `G00 Z${safeZ_.toFixed(1)}`,
+      ``
+    )
+  }
+
+  p(
+    `; ─── PROGRAM SONU ────────────────────────────────────────`,
+    `M09                    ; Soğutma kapat`,
+    `G00 X200.0 Z200.0      ; Güvenli konum`,
+    `M05                    ; Mil dur`,
+    `M30                    ; Program sonu — başa sar`,
+    `%`
+  )
 
   gcode=L.join('\n')
   document.getElementById('gcOut').innerHTML=L.map(hl).join('\n')
@@ -755,17 +962,19 @@ function generateGCode(){
   document.getElementById('sLines').textContent=L.length
   document.getElementById('sOps').textContent=opN
   document.getElementById('sTools').textContent=tlN
-  document.getElementById('sTime').textContent=Math.round(profile.length*sl*.015/f+opN*3)
+  document.getElementById('sTime').textContent=Math.round(totalPartLen*steps.length*0.02/f+opN*2)
 
-  // tool list
-  const TL={face:{n:'T0101',name:'Alın Kalem',tip:'CNMG 120408'},
-    drill:{n:'T0202',name:'Matkap Ø15',tip:'HSS / Karbür'},
-    rough_od:{n:'T0303',name:'Dış Kalem',tip:'TNMG 160408'},
-    finish_od:{n:'T0303',name:'Dış Kalem',tip:'TNMG — İnce paso'},
-    groove:{n:'T0404',name:'Kanal Kalemi',tip:'3mm Genişlik'},
-    thread:{n:'T0505',name:'Diş Kalemi',tip:'60° ISO Profil'},
+  // Tool list
+  const TL={
+    face:{n:'T0101',name:'Alın Kalem',tip:'CNMG 120408'},
+    drill:{n:'T0202',name:`Matkap Ø15`,tip:'HSS / Karbür'},
+    rough_od:{n:'T0303',name:'Dış Kalem',tip:'TNMG 160408 — Kaba'},
+    finish_od:{n:'T0303',name:'Dış Kalem',tip:'TNMG 160408 — İnce'},
+    groove:{n:'T0404',name:'Kanal Kalemi',tip:'3mm genişlik'},
+    thread:{n:'T0505',name:'Diş Kalemi',tip:'60° ISO profil'},
     bore:{n:'T0606',name:'İç Kalem',tip:'CCMT 060204'},
-    cutoff:{n:'T0707',name:'Kesme Kalemi',tip:'3mm Genişlik'}}
+    cutoff:{n:'T0707',name:'Kesme Kalemi',tip:'3mm genişlik'},
+  }
   document.getElementById('toolList').innerHTML=
     active.map(op=>{const t=TL[op.id];if(!t)return''
       return`<div class="tool-row"><span class="tool-num">${t.n}</span>
@@ -776,9 +985,8 @@ function generateGCode(){
 function copyGCode(){
   if(!gcode){alert('Önce G-Code üretin!');return}
   navigator.clipboard.writeText(gcode).then(()=>{
-    const btn=document.getElementById('copyBtn')
-    btn.textContent='✅ Kopyalandı'
-    setTimeout(()=>btn.textContent='📋 Kopyala',2200)
+    document.getElementById('copyBtn').textContent='✅ Kopyalandı'
+    setTimeout(()=>document.getElementById('copyBtn').textContent='📋 Kopyala',2200)
   })
 }
 
@@ -786,13 +994,13 @@ function downloadGCode(){
   if(!gcode){alert('Önce G-Code üretin!');return}
   const a=document.createElement('a')
   a.href=URL.createObjectURL(new Blob([gcode],{type:'text/plain'}))
-  a.download=`${(v('progNum')||'O1001').replace(/[^a-zA-Z0-9]/g,'_')}.nc`
+  a.download=`${(vv('progNum')||'O1001').replace(/[^a-zA-Z0-9]/g,'_')}.nc`
   a.click()
 }
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
+/* ─── INIT ───────────────────────────────────────────────────────────────── */
 renderOps()
-drawCanvas()
+redraw()
 loadExample()
 </script>
 </body>
