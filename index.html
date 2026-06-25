@@ -178,7 +178,8 @@ canvas{display:block;width:100%;background:#060c1a}
       <!-- PDF / Image upload -->
       <div class="panel">
         <div class="ph"><div class="ph-icon ic-blue">📐</div>
-          <div><div class="pt">Teknik Resim / PDF</div><div class="ps">Referans olarak görüntüle</div></div>
+          <div><div class="pt">Teknik Resim / PDF</div><div class="ps">Yükle → AI ölçüleri okur → Tablo dolar</div></div>
+          <span style="margin-left:auto;font-size:9px;font-weight:700;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;padding:3px 8px;border-radius:5px">🤖 Gemini AI</span>
         </div>
         <div class="pb">
           <div class="upload" id="uploadZone"
@@ -196,6 +197,7 @@ canvas{display:block;width:100%;background:#060c1a}
             <div class="progress" id="pdfProg"><div class="progress-bar" id="pdfBar"></div></div>
             <div class="pdf-info" id="pdfInfo"></div>
           </div>
+          <div id="aiNotes" style="display:none;margin-top:8px;padding:8px 10px;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.2);border-radius:7px;font-size:10px;color:#fcd34d;line-height:1.5"></div>
         </div>
       </div>
 
@@ -671,48 +673,146 @@ function redraw(){
     `Ø${maxD}×${totalL.toFixed(0)}mm | Z:0 → Z:${(-totalL).toFixed(0)}`
 }
 
-/* ─── FILE UPLOAD ────────────────────────────────────────────────────────── */
+/* ─── FILE UPLOAD + AI ANALİZ ──────────────────────────────────────────── */
+
+// Backend API URL — cloudflare tunnel üzerinden
+const API_BASE = 'https://api.knowledge-arena.xyz'
+
 async function handleFile(file){
   if(!file) return
-  if(file.type==='application/pdf') await parsePdf(file)
-  else if(file.type.startsWith('image/')){
+
+  const prog=document.getElementById('pdfProg')
+  const bar=document.getElementById('pdfBar')
+  const info=document.getElementById('pdfInfo')
+  prog.style.display='block'; bar.style.width='5%'
+  info.style.display='block'; info.textContent='Dosya yükleniyor...'
+
+  // 1. PDF ise önce tarayıcıda render et (önizleme için)
+  if(file.type==='application/pdf'){
+    try{
+      if(!window.pdfjsLib){
+        await new Promise((res,rej)=>{
+          const s=document.createElement('script')
+          s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
+          s.onload=res; s.onerror=rej; document.head.appendChild(s)
+        })
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc=
+          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+      }
+      bar.style.width='20%'; info.textContent='PDF önizleme hazırlanıyor...'
+      const ab=await file.arrayBuffer()
+      const pdf=await window.pdfjsLib.getDocument({data:ab}).promise
+      const page=await pdf.getPage(1)
+      const vp=page.getViewport({scale:2.0})
+      const tmp=document.createElement('canvas')
+      tmp.width=vp.width; tmp.height=vp.height
+      await page.render({canvasContext:tmp.getContext('2d'),viewport:vp}).promise
+      document.getElementById('preview-img').src=tmp.toDataURL()
+      document.getElementById('preview-img').style.display='block'
+      document.getElementById('uploadContent').style.display='none'
+    } catch{
+      info.textContent='⚠️ PDF önizleme hatası — analiz devam ediyor...'
+    }
+  } else {
+    // Resim ise doğrudan göster
     document.getElementById('preview-img').src=URL.createObjectURL(file)
     document.getElementById('preview-img').style.display='block'
     document.getElementById('uploadContent').style.display='none'
   }
+
+  // 2. AI ile ölçüleri oku
+  await analyzeWithAI(file, bar, info)
 }
 
-async function parsePdf(file){
-  const prog=document.getElementById('pdfProg')
-  const bar=document.getElementById('pdfBar')
-  const info=document.getElementById('pdfInfo')
-  prog.style.display='block'; bar.style.width='10%'
-  info.style.display='block'; info.textContent='PDF yükleniyor...'
+async function analyzeWithAI(file, bar, info){
   try{
-    if(!window.pdfjsLib){
-      await new Promise((res,rej)=>{
-        const s=document.createElement('script')
-        s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
-        s.onload=res; s.onerror=rej; document.head.appendChild(s)
-      })
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc=
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+    bar.style.width='40%'
+    info.textContent='🤖 Gemini AI teknik resmi analiz ediyor...'
+    info.style.color='#fbbf24'
+
+    const formData = new FormData()
+    formData.append('drawing', file)
+
+    const resp = await fetch(`${API_BASE}/api/analyze-drawing`, {
+      method: 'POST',
+      body: formData
+    })
+
+    bar.style.width='80%'
+
+    if(!resp.ok){
+      const err = await resp.json().catch(()=>({}))
+      throw new Error(err.error || `HTTP ${resp.status}`)
     }
-    bar.style.width='40%'; info.textContent='Render ediliyor...'
-    const ab=await file.arrayBuffer()
-    const pdf=await window.pdfjsLib.getDocument({data:ab}).promise
-    const page=await pdf.getPage(1)
-    const vp=page.getViewport({scale:2.0})
-    const tmp=document.createElement('canvas')
-    tmp.width=vp.width; tmp.height=vp.height
-    await page.render({canvasContext:tmp.getContext('2d'),viewport:vp}).promise
-    document.getElementById('preview-img').src=tmp.toDataURL()
-    document.getElementById('preview-img').style.display='block'
-    document.getElementById('uploadContent').style.display='none'
+
+    const data = await resp.json()
     bar.style.width='100%'
-    info.textContent=`✅ ${file.name} (${pdf.numPages} sayfa)`
-  } catch {
-    info.textContent='⚠️ PDF okunamadı — PNG olarak kaydedin'
+
+    if(data.error && !data.steps?.length){
+      info.style.color='#fca5a5'
+      info.textContent=`⚠️ ${data.error}`
+      return
+    }
+
+    // 3. Sonuçları tabloya uygula
+    applyAIResult(data)
+
+    const conf = data.confidence ?? '?'
+    const stepCount = data.steps?.length ?? 0
+    info.style.color='#6ee7b7'
+    info.textContent=`✅ AI analiz tamamlandı — ${stepCount} adım bulundu (Güven: %${conf})`
+
+    if(data.notes && data.confidence < 80){
+      info.textContent += ` | ⚠️ ${data.notes}`
+    }
+
+  } catch(e){
+    bar.style.width='100%'
+    info.style.color='#fca5a5'
+    info.textContent=`❌ AI hatası: ${e.message} — Lütfen manuel girin`
+    console.error('[AI]', e)
+  }
+}
+
+function applyAIResult(data){
+  // Hammadde boyutlarını güncelle
+  if(data.stockDiameter > 0) document.getElementById('stockD').value = data.stockDiameter
+  if(data.stockLength   > 0) document.getElementById('stockL').value = data.stockLength
+  if(data.material) document.getElementById('material').value = data.material
+
+  // Adımları temizle ve doldur
+  steps = []
+  if(data.steps && data.steps.length > 0){
+    data.steps.forEach(s=>{
+      const id = Date.now() + Math.random()
+      steps.push({
+        id,
+        diam:  parseFloat(s.diam)  || 0,
+        len:   parseFloat(s.len)   || 0,
+        feat:  s.feat || 'cylinder',
+        chamR: parseFloat(s.chamR) || 0
+      })
+    })
+  }
+
+  // Operasyonları güncelle
+  if(data.operations){
+    OPS.forEach(op=>{
+      if(data.operations[op.id] !== undefined) op.on = !!data.operations[op.id]
+    })
+    renderOps()
+  }
+
+  // Tabloyu güncelle
+  renderSteps()
+
+  // AI notunu göster
+  if(data.notes){
+    const notesEl = document.getElementById('aiNotes')
+    if(notesEl){
+      notesEl.style.display='block'
+      notesEl.textContent='📝 AI Notu: ' + data.notes
+    }
   }
 }
 
